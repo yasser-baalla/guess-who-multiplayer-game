@@ -490,6 +490,20 @@
           <div class="code" id="roomCodeDisplay"></div>
         </div>
 
+        <div style="margin-top: 30px;">
+          <h3><i class="fas fa-user-secret"></i> Choose Your Mystery Person</h3>
+          <p>Think of a famous person and enter their name below while waiting for your friend.</p>
+
+          <div class="form-group">
+            <label for="creatorSecretPerson">Famous Person</label>
+            <input type="text" id="creatorSecretPerson" class="form-input" placeholder="e.g., Leonardo DiCaprio, Taylor Swift, Cristiano Ronaldo" maxlength="50">
+          </div>
+
+          <button class="btn btn-primary" onclick="setCreatorSecretPerson()">
+            <i class="fas fa-check"></i> I'm Ready!
+          </button>
+        </div>
+
         <div class="waiting-room">
           <h3>Waiting for another player...</h3>
           <div class="spinner"></div>
@@ -631,8 +645,8 @@
       currentPlayer = { name: playerName };
     }
 
-    function setSecretPerson() {
-      const secretPerson = document.getElementById('secretPerson').value.trim();
+    function setCreatorSecretPerson() {
+      const secretPerson = document.getElementById('creatorSecretPerson').value.trim();
 
       if (!secretPerson) {
         showMessage('Please enter a famous person.', 'error');
@@ -640,8 +654,10 @@
       }
 
       socket.emit('setSecretPerson', currentRoom, secretPerson);
-      document.getElementById('setupScreen').style.display = 'none';
-      document.getElementById('waitingMessage').style.display = 'block';
+      document.getElementById('creatorSecretPerson').disabled = true;
+      document.querySelector('#roomCreatedScreen button[onclick="setCreatorSecretPerson()"]').textContent = 'Waiting for other player...';
+      document.querySelector('#roomCreatedScreen button[onclick="setCreatorSecretPerson()"]').disabled = true;
+      showMessage('Person chosen! Waiting for the other player to join and choose their person.', 'success');
     }
 
     function askQuestion() {
@@ -695,10 +711,10 @@
 
     socket.on('joinedRoom', (roomId, playerCount) => {
       if (document.getElementById('roomCreatedScreen').classList.contains('active')) {
-        // We're in create room screen, stay there
+        // We're the room creator, already on roomCreatedScreen
         showMessage(`Room created! Waiting for another player... (${playerCount}/2)`, 'success');
       } else {
-        // We're joining, go to setup
+        // We're joining, go to setup screen
         showScreen('setupScreen');
         showMessage(`Joined room ${roomId}. Waiting for another player... (${playerCount}/2)`, 'success');
       }
@@ -706,6 +722,17 @@
 
     socket.on('roomFull', (players) => {
       showMessage('Room is full! Both players are here.', 'success');
+
+      // If we're the room creator on roomCreatedScreen, stay there but update status
+      if (document.getElementById('roomCreatedScreen').classList.contains('active')) {
+        // Room creator is already on roomCreatedScreen
+        const waitingRoom = document.querySelector('.waiting-room h3');
+        waitingRoom.innerHTML = '<i class="fas fa-users"></i> Player joined! Choose your person above.';
+        document.querySelector('.spinner').style.display = 'none';
+      } else {
+        // Joining player goes to setup screen
+        showScreen('setupScreen');
+      }
     });
 
     socket.on('gameStart', (players, turn) => {
