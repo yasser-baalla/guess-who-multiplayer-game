@@ -22,6 +22,17 @@ fifa-parser.js
 convert-players.js
 merge-databases.js
 analyze-database.js
+fix-syntax-errors.js
+debug_page.html
+SCRAPER_README.md
+
+# IDE and development files
+.vscode/
+*.tmp
+fifa-parser.js
+convert-players.js
+merge-databases.js
+analyze-database.js
 debug_page.html
 SCRAPER_README.md
 
