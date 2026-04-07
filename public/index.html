@@ -393,6 +393,87 @@
       transform: translateY(-1px);
     }
 
+    .player-search {
+      margin-bottom: 20px;
+    }
+
+    .player-search input {
+      width: 100%;
+    }
+
+    .player-list {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      background: white;
+      margin-bottom: 20px;
+    }
+
+    .player-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #e5e7eb;
+      transition: all 0.2s ease;
+    }
+
+    .player-item:last-child {
+      border-bottom: none;
+    }
+
+    .player-item:hover {
+      background: #f3f4f6;
+      transform: translateX(4px);
+    }
+
+    .player-item.selected {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      border-left: 4px solid #3b82f6;
+    }
+
+    .player-flag {
+      font-size: 2rem;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .player-info {
+      flex: 1;
+    }
+
+    .player-name {
+      font-weight: 600;
+      color: #1f2937;
+      font-size: 1rem;
+    }
+
+    .player-country {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .selected-player-display {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      border: 2px solid #34d399;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .selected-player-display.active {
+      display: flex;
+    }
+
+    .selected-player-display .player-flag {
+      font-size: 3rem;
+    }
+
     @media (max-width: 768px) {
       .game-board {
         grid-template-columns: 1fr;
@@ -411,21 +492,25 @@
       .btn {
         min-width: 250px;
       }
+
+      .player-list {
+        max-height: 250px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="app">
     <div class="header">
-      <h1><i class="fas fa-brain"></i> Guess Who</h1>
-      <p>Multiplayer Edition - Test your knowledge!</p>
+      <h1><i class="fas fa-soccer-ball"></i> Guess Who - Soccer Edition</h1>
+      <p>Multiplayer Soccer Players Guessing Game!</p>
     </div>
 
     <div class="main-content">
       <!-- Welcome Screen -->
       <div id="welcomeScreen" class="screen active welcome-screen">
         <h2>Welcome to Guess Who!</h2>
-        <p>Think of a famous person and answer yes/no questions to guess each other's mystery celebrity.</p>
+        <p>Guess your opponent's mystery soccer player by asking yes/no questions!</p>
         <div class="action-buttons">
           <button class="btn btn-primary" onclick="showScreen('createRoomScreen')">
             <i class="fas fa-plus-circle"></i> Create Room
@@ -491,15 +576,24 @@
         </div>
 
         <div style="margin-top: 30px;">
-          <h3><i class="fas fa-user-secret"></i> Choose Your Mystery Person</h3>
-          <p>Think of a famous person and enter their name below while waiting for your friend.</p>
+          <h3><i class="fas fa-soccer-ball"></i> Choose Your Mystery Soccer Player</h3>
+          <p>Select a famous soccer player from the list below. Keep your choice secret!</p>
 
-          <div class="form-group">
-            <label for="creatorSecretPerson">Famous Person</label>
-            <input type="text" id="creatorSecretPerson" class="form-input" placeholder="e.g., Leonardo DiCaprio, Taylor Swift, Cristiano Ronaldo" maxlength="50">
+          <div class="player-search">
+            <input type="text" id="creatorPlayerSearch" class="form-input" placeholder="Search player name or country..." onkeyup="filterCreatorPlayers()">
           </div>
 
-          <button class="btn btn-primary" onclick="setCreatorSecretPerson()">
+          <div id="creatorPlayerList" class="player-list"></div>
+
+          <div id="creatorSelectedPlayer" class="selected-player-display">
+            <div class="player-flag" id="creatorPlayerFlag"></div>
+            <div class="player-info">
+              <div class="player-name" id="creatorPlayerName"></div>
+              <div class="player-country" id="creatorPlayerCountry"></div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" onclick="setCreatorSecretPerson()" id="creatorReadyBtn">
             <i class="fas fa-check"></i> I'm Ready!
           </button>
         </div>
@@ -513,15 +607,24 @@
 
       <!-- Setup Screen -->
       <div id="setupScreen" class="screen">
-        <h2><i class="fas fa-user-secret"></i> Choose Your Mystery Person</h2>
-        <p>Think of a famous person (actor, musician, athlete, politician, etc.) and enter their name below. Keep it secret!</p>
+        <h2><i class="fas fa-soccer-ball"></i> Choose Your Mystery Soccer Player</h2>
+        <p>Select a famous soccer player from the list below. Keep your choice secret!</p>
 
-        <div class="form-group">
-          <label for="secretPerson">Famous Person</label>
-          <input type="text" id="secretPerson" class="form-input" placeholder="e.g., Leonardo DiCaprio, Taylor Swift, Cristiano Ronaldo" maxlength="50">
+        <div class="player-search">
+          <input type="text" id="playerSearch" class="form-input" placeholder="Search player name or country..." onkeyup="filterPlayers()">
         </div>
 
-        <button class="btn btn-primary" onclick="setSecretPerson()">
+        <div id="playerList" class="player-list"></div>
+
+        <div id="selectedPlayer" class="selected-player-display">
+          <div class="player-flag" id="selectedPlayerFlag"></div>
+          <div class="player-info">
+            <div class="player-name" id="selectedPlayerName"></div>
+            <div class="player-country" id="selectedPlayerCountry"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="setSecretPerson()" id="readyBtn">
           <i class="fas fa-check"></i> I'm Ready to Play!
         </button>
 
@@ -598,20 +701,163 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    // Famous Soccer Players Database
+    const soccerPlayers = [
+      { name: 'Cristiano Ronaldo', country: 'Portugal', flag: '🇵🇹' },
+      { name: 'Lionel Messi', country: 'Argentina', flag: '🇦🇷' },
+      { name: 'Kylian Mbappé', country: 'France', flag: '🇫🇷' },
+      { name: 'Neymar Jr', country: 'Brazil', flag: '🇧🇷' },
+      { name: 'Robert Lewandowski', country: 'Poland', flag: '🇵🇱' },
+      { name: 'Luis Suárez', country: 'Uruguay', flag: '🇺🇾' },
+      { name: 'Sergio Ramos', country: 'Spain', flag: '🇪🇸' },
+      { name: 'Manuel Neuer', country: 'Germany', flag: '🇩🇪' },
+      { name: 'Virgil van Dijk', country: 'Netherlands', flag: '🇳🇱' },
+      { name: 'Mohamed Salah', country: 'Egypt', flag: '🇪🇬' },
+      { name: 'Sadio Mané', country: 'Senegal', flag: '🇸🇳' },
+      { name: 'Harry Kane', country: 'England', flag: '🇬🇧' },
+      { name: 'Son Heung-min', country: 'South Korea', flag: '🇰🇷' },
+      { name: 'Gianluigi Donnarumma', country: 'Italy', flag: '🇮🇹' },
+      { name: 'Alphonso Davies', country: 'Canada', flag: '🇨🇦' },
+      { name: 'Rafael Leão', country: 'Portugal', flag: '🇵🇹' },
+      { name: 'Vinícius Júnior', country: 'Brazil', flag: '🇧🇷' },
+      { name: 'Jude Bellingham', country: 'England', flag: '🇬🇧' },
+      { name: 'Pedri', country: 'Spain', flag: '🇪🇸' },
+      { name: 'João Félix', country: 'Portugal', flag: '🇵🇹' },
+      { name: 'Erling Haaland', country: 'Norway', flag: '🇳🇴' },
+      { name: 'Declan Rice', country: 'England', flag: '🇬🇧' },
+      { name: 'Rúben Dias', country: 'Portugal', flag: '🇵🇹' },
+      { name: 'Serge Gnabry', country: 'Germany', flag: '🇩🇪' },
+      { name: 'Bruno Fernandes', country: 'Portugal', flag: '🇵🇹' },
+      { name: 'Jamal Musiala', country: 'Germany', flag: '🇩🇪' },
+      { name: 'Giorgio Chiellini', country: 'Italy', flag: '🇮🇹' },
+      { name: 'Karim Benzema', country: 'France', flag: '🇫🇷' },
+      { name: 'Gigi Buffon', country: 'Italy', flag: '🇮🇹' },
+      { name: 'Luka Modrić', country: 'Croatia', flag: '🇭🇷' },
+      { name: 'Sergio Busquets', country: 'Spain', flag: '🇪🇸' },
+      { name: 'David de Gea', country: 'Spain', flag: '🇪🇸' },
+      { name: 'Thiago Alcântara', country: 'Spain', flag: '🇪🇸' },
+      { name: 'Eden Hazard', country: 'Belgium', flag: '🇧🇪' },
+      { name: 'Thibaut Courtois', country: 'Belgium', flag: '🇧🇪' },
+      { name: 'Ederson', country: 'Brazil', flag: '🇧🇷' },
+      { name: 'Mason Mount', country: 'England', flag: '🇬🇧' },
+      { name: 'Phil Foden', country: 'England', flag: '🇬🇧' },
+      { name: 'Jack Grealish', country: 'England', flag: '🇬🇧' },
+      { name: 'Frenkie de Jong', country: 'Netherlands', flag: '🇳🇱' },
+      { name: 'Memphis Depay', country: 'Netherlands', flag: '🇳🇱' },
+      { name: 'Lisandro Martínez', country: 'Argentina', flag: '🇦🇷' },
+      { name: 'Ángel Di María', country: 'Argentina', flag: '🇦🇷' },
+      { name: 'Julián Álvarez', country: 'Argentina', flag: '🇦🇷' },
+      { name: 'Romain Grosjean', country: 'France', flag: '🇫🇷' },
+      { name: 'Eduardo Camavinga', country: 'France', flag: '🇫🇷' },
+      { name: 'Aurélien Tchouaméni', country: 'France', flag: '🇫🇷' },
+      { name: 'Achraf Hakimi', country: 'Morocco', flag: '🇲🇦' },
+      { name: 'Rúben Neves', country: 'Portugal', flag: '🇵🇹' },
+      { name: 'Adrien Rabiot', country: 'France', flag: '🇫🇷' }
+    ];
+
     const socket = io();
     let currentRoom = null;
     let currentPlayer = null;
     let currentTurn = null;
+    let selectedPlayer = null;
+    let creatorSelectedPlayer = null;
 
     function showScreen(screenId) {
       document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
       });
       document.getElementById(screenId).classList.add('active');
+
+      // Initialize player lists when setup screens are shown
+      if (screenId === 'setupScreen') {
+        initializePlayerList();
+      } else if (screenId === 'roomCreatedScreen') {
+        initializeCreatorPlayerList();
+      }
     }
 
     function generateRoomCode() {
       return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+
+    function initializePlayerList() {
+      const playerList = document.getElementById('playerList');
+      playerList.innerHTML = soccerPlayers.map((player, index) => `
+        <div class="player-item" onclick="selectPlayer(${index})">
+          <div class="player-flag">${player.flag}</div>
+          <div class="player-info">
+            <div class="player-name">${player.name}</div>
+            <div class="player-country">${player.country}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function initializeCreatorPlayerList() {
+      const playerList = document.getElementById('creatorPlayerList');
+      playerList.innerHTML = soccerPlayers.map((player, index) => `
+        <div class="player-item" onclick="selectCreatorPlayer(${index})">
+          <div class="player-flag">${player.flag}</div>
+          <div class="player-info">
+            <div class="player-name">${player.name}</div>
+            <div class="player-country">${player.country}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function selectPlayer(index) {
+      selectedPlayer = soccerPlayers[index];
+      
+      // Update UI
+      document.querySelectorAll('#playerList .player-item').forEach((item, i) => {
+        item.classList.toggle('selected', i === index);
+      });
+
+      const display = document.getElementById('selectedPlayer');
+      document.getElementById('selectedPlayerFlag').textContent = selectedPlayer.flag;
+      document.getElementById('selectedPlayerName').textContent = selectedPlayer.name;
+      document.getElementById('selectedPlayerCountry').textContent = selectedPlayer.country;
+      display.classList.add('active');
+    }
+
+    function selectCreatorPlayer(index) {
+      creatorSelectedPlayer = soccerPlayers[index];
+      
+      // Update UI
+      document.querySelectorAll('#creatorPlayerList .player-item').forEach((item, i) => {
+        item.classList.toggle('selected', i === index);
+      });
+
+      const display = document.getElementById('creatorSelectedPlayer');
+      document.getElementById('creatorPlayerFlag').textContent = creatorSelectedPlayer.flag;
+      document.getElementById('creatorPlayerName').textContent = creatorSelectedPlayer.name;
+      document.getElementById('creatorPlayerCountry').textContent = creatorSelectedPlayer.country;
+      display.classList.add('active');
+    }
+
+    function filterPlayers() {
+      const searchTerm = document.getElementById('playerSearch').value.toLowerCase();
+      const playerItems = document.querySelectorAll('#playerList .player-item');
+
+      playerItems.forEach((item, index) => {
+        const player = soccerPlayers[index];
+        const matches = player.name.toLowerCase().includes(searchTerm) || 
+                       player.country.toLowerCase().includes(searchTerm);
+        item.style.display = matches ? 'flex' : 'none';
+      });
+    }
+
+    function filterCreatorPlayers() {
+      const searchTerm = document.getElementById('creatorPlayerSearch').value.toLowerCase();
+      const playerItems = document.querySelectorAll('#creatorPlayerList .player-item');
+
+      playerItems.forEach((item, index) => {
+        const player = soccerPlayers[index];
+        const matches = player.name.toLowerCase().includes(searchTerm) || 
+                       player.country.toLowerCase().includes(searchTerm);
+        item.style.display = matches ? 'flex' : 'none';
+      });
     }
 
     function createRoom() {
@@ -646,32 +892,32 @@
     }
 
     function setCreatorSecretPerson() {
-      const secretPerson = document.getElementById('creatorSecretPerson').value.trim();
-
-      if (!secretPerson) {
-        showMessage('Please enter a famous person.', 'error');
+      if (!creatorSelectedPlayer) {
+        showMessage('Please select a soccer player.', 'error');
         return;
       }
 
-      socket.emit('setSecretPerson', currentRoom, secretPerson);
-      document.getElementById('creatorSecretPerson').disabled = true;
-      document.querySelector('#roomCreatedScreen button[onclick="setCreatorSecretPerson()"]').textContent = 'Waiting for other player...';
-      document.querySelector('#roomCreatedScreen button[onclick="setCreatorSecretPerson()"]').disabled = true;
-      showMessage('Person chosen! Waiting for the other player to join and choose their person.', 'success');
+      socket.emit('setSecretPerson', currentRoom, creatorSelectedPlayer.name);
+      document.getElementById('creatorPlayerSearch').disabled = true;
+      document.querySelectorAll('#creatorPlayerList .player-item').forEach(item => {
+        item.style.pointerEvents = 'none';
+        item.style.opacity = '0.5';
+      });
+      document.getElementById('creatorReadyBtn').textContent = 'Waiting for other player...';
+      document.getElementById('creatorReadyBtn').disabled = true;
+      showMessage('Player chosen! Waiting for the other player to join and choose their player.', 'success');
     }
 
     function setSecretPerson() {
-      const secretPerson = document.getElementById('secretPerson').value.trim();
-
-      if (!secretPerson) {
-        showMessage('Please enter a famous person.', 'error');
+      if (!selectedPlayer) {
+        showMessage('Please select a soccer player.', 'error');
         return;
       }
 
-      socket.emit('setSecretPerson', currentRoom, secretPerson);
+      socket.emit('setSecretPerson', currentRoom, selectedPlayer.name);
       document.getElementById('setupScreen').style.display = 'none';
       document.getElementById('waitingMessage').style.display = 'block';
-      showMessage('Person chosen! Waiting for the other player to choose their person.', 'success');
+      showMessage('Player chosen! Waiting for the other player to choose their player.', 'success');
     }
 
     function askQuestion() {
