@@ -2,3 +2,30 @@ node_modules/
 *.log
 .env
 .DS_Store
+
+# Data files (large CSV files and raw data)
+*.csv
+*.csv.zip
+*_raw.json
+fifa_players.csv
+fifa_players.csv.zip
+fifa_players_raw.json
+soccerratings_players_raw.json
+soccerwiki_players_basic.json
+
+# Development scripts (keep only essential files for deployment)
+scraper.js
+run-scraper.js
+soccerratings-scraper.js
+soccerratings-api-scraper.js
+fifa-parser.js
+convert-players.js
+merge-databases.js
+analyze-database.js
+debug_page.html
+SCRAPER_README.md
+
+# Temporary data files
+players_for_game.json
+soccerratings_players_for_game.json
+merged_database.json
