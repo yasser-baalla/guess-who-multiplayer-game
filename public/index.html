@@ -901,54 +901,6 @@
       { name: 'Javier Mascherano', country: 'Argentina', flag: '🇦🇷' }
     ];
       
-      // England Premier League
-      { name: 'Erling Haaland', country: 'Norway', flag: '🇳🇴' },
-      { name: 'Harry Kane', country: 'England', flag: '🇬🇧' },
-      { name: 'Jude Bellingham', country: 'England', flag: '🇬🇧' },
-      { name: 'Declan Rice', country: 'England', flag: '🇬🇧' },
-      { name: 'Mason Mount', country: 'England', flag: '🇬🇧' },
-      { name: 'Phil Foden', country: 'England', flag: '🇬🇧' },
-      { name: 'Jack Grealish', country: 'England', flag: '🇬🇧' },
-      { name: 'Marcus Rashford', country: 'England', flag: '🇬🇧' },
-      { name: 'Bukayo Saka', country: 'England', flag: '🇬🇧' },
-      { name: 'Reece James', country: 'England', flag: '🇬🇧' },
-      { name: 'Kyle Walker', country: 'England', flag: '🇬🇧' },
-      { name: 'Jordan Pickford', country: 'England', flag: '🇬🇧' },
-      { name: 'Luke Shaw', country: 'England', flag: '🇬🇧' },
-      { name: 'Trent Alexander-Arnold', country: 'England', flag: '🇬🇧' },
-      
-      // Spain La Liga
-      { name: 'Kylian Mbappé', country: 'France', flag: '🇫🇷' },
-      { name: 'Pedri', country: 'Spain', flag: '🇪🇸' },
-      { name: 'Gavi', country: 'Spain', flag: '🇪🇸' },
-      { name: 'Sergio Busquets', country: 'Spain', flag: '🇪🇸' },
-      { name: 'Sergio Ramos', country: 'Spain', flag: '🇪🇸' },
-      { name: 'Xavi', country: 'Spain', flag: '🇪🇸' },
-      { name: 'Andrés Iniesta', country: 'Spain', flag: '🇪🇸' },
-      { name: 'Thiago Alcântara', country: 'Spain', flag: '🇪🇸' },
-      { name: 'David de Gea', country: 'Spain', flag: '🇪🇸' },
-      { name: 'Luis García', country: 'Spain', flag: '🇪🇸' },
-      
-      // France Ligue 1
-      { name: 'Karim Benzema', country: 'France', flag: '🇫🇷' },
-      { name: 'Eduardo Camavinga', country: 'France', flag: '🇫🇷' },
-      { name: 'Aurélien Tchouaméni', country: 'France', flag: '🇫🇷' },
-      { name: 'Adrien Rabiot', country: 'France', flag: '🇫🇷' },
-      { name: 'Zinedine Zidane', country: 'France', flag: '🇫🇷' },
-      { name: 'Thierry Henry', country: 'France', flag: '🇫🇷' },
-      { name: 'Patrick Vieira', country: 'France', flag: '🇫🇷' },
-      
-      // Germany Bundesliga
-      { name: 'Robert Lewandowski', country: 'Poland', flag: '🇵🇱' },
-      { name: 'Manuel Neuer', country: 'Germany', flag: '🇩🇪' },
-      { name: 'Jamal Musiala', country: 'Germany', flag: '🇩🇪' },
-      { name: 'Serge Gnabry', country: 'Germany', flag: '🇩🇪' },
-      { name: 'Joshua Kimmich', country: 'Germany', flag: '🇩🇪' },
-      { name: 'Antonio Rüdiger', country: 'Germany', flag: '🇩🇪' },
-      { name: 'Leroy Sané', country: 'Germany', flag: '🇩🇪' },
-      { name: 'Bastian Schweinsteiger', country: 'Germany', flag: '🇩🇪' },
-      { name: 'Mario Gomez', country: 'Germany', flag: '🇩🇪' },
-      
       // Italy Serie A
       { name: 'Giorgio Chiellini', country: 'Italy', flag: '🇮🇹' },
       { name: 'Gianluigi Donnarumma', country: 'Italy', flag: '🇮🇹' },
@@ -1086,6 +1038,78 @@
     let currentTurn = null;
     let selectedPlayer = null;
     let creatorSelectedPlayer = null;
+
+    // Function definitions (moved to top so they're available when HTML calls them)
+    // Socket event handlers
+    socket.on('joinedRoom', (roomId) => {
+      showScreen('setupScreen');
+    });
+
+    socket.on('roomFull', () => {
+      showScreen('waitingScreen');
+    });
+
+    socket.on('gameStart', (players, turn) => {
+      document.getElementById('waitingMessage').style.display = 'none';
+      showScreen('gameScreen');
+      currentTurn = turn;
+      updateTurnIndicator(players, turn);
+
+      // Display the selected player at the top
+      const player = selectedPlayer || creatorSelectedPlayer;
+      if (player) {
+        document.getElementById('topPlayerFlag').textContent = player.flag;
+        document.getElementById('topPlayerName').textContent = player.name;
+        document.getElementById('topPlayerCountry').textContent = player.country;
+        document.getElementById('selectedPlayerTop').style.display = 'block';
+      }
+    });
+
+    socket.on('turnChanged', (turn) => {
+      currentTurn = turn;
+      updateTurnIndicator(null, turn);
+    });
+
+    socket.on('questionAsked', (question, askerId) => {
+      document.getElementById('questionToAnswer').textContent = question;
+      document.getElementById('answerSection').style.display = 'block';
+      addToHistory(`Opponent asked: ${question}`, 'opponent');
+    });
+
+    socket.on('questionAnswered', (answer) => {
+      addToHistory(`Opponent answered: ${answer}`, 'opponent');
+      
+      // Re-enable ask button after opponent's answer is received
+      const askBtn = document.querySelector('#askSection button[onclick="askQuestion()"]');
+      if (askBtn) {
+        askBtn.disabled = false;
+        askBtn.style.opacity = '1';
+        askBtn.style.cursor = 'pointer';
+      }
+    });
+
+    socket.on('wrongGuess', (guess) => {
+      showMessage(`Wrong guess: ${guess}`, 'error');
+      addToHistory(`You guessed: ${guess} (wrong)`, 'you');
+    });
+
+    socket.on('gameOver', (winnerId, correctGuess) => {
+      showScreen('gameOverScreen');
+
+      const isWinner = winnerId === socket.id;
+      const message = isWinner
+        ? `<i class="fas fa-trophy"></i> Congratulations! You won! The person was <strong>${correctGuess}</strong>.`
+        : `<i class="fas fa-heart-broken"></i> Game over! Your opponent guessed correctly: <strong>${correctGuess}</strong>.`;
+
+      document.getElementById('gameOverMessage').innerHTML = message;
+      document.getElementById('gameOverMessage').className = `winner-message ${isWinner ? 'winner' : 'loser'}`;
+      addToHistory(message, 'system');
+    });
+
+    socket.on('playerDisconnected', () => {
+      showMessage('The other player disconnected. Game ended.', 'error');
+      setTimeout(() => location.reload(), 3000);
+    });
 
     function showScreen(screenId) {
       document.querySelectorAll('.screen').forEach(screen => {
