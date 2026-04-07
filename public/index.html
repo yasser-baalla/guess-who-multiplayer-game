@@ -635,6 +635,11 @@
 
       <!-- Game Screen -->
       <div id="gameScreen" class="screen">
+        <div id="selectedPlayerTop" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; display: none;">
+          <div style="font-size: 2rem; margin-bottom: 10px;" id="topPlayerFlag"></div>
+          <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;" id="topPlayerName"></div>
+          <div style="font-size: 0.9rem; color: #6b7280; margin-top: 5px;" id="topPlayerCountry"></div>
+        </div>
         <div class="game-board">
           <div class="game-main">
             <div id="turnIndicator" class="turn-indicator waiting">
@@ -643,7 +648,7 @@
 
             <div id="askSection" class="action-card" style="display: none;">
               <h4><i class="fas fa-question-circle"></i> Ask a Question</h4>
-              <input type="text" id="questionInput" class="form-input" placeholder="Ask a yes/no question about their person">
+              <input type="text" id="questionInput" class="form-input" placeholder="Ask a yes/no question about their player">
               <button class="btn btn-primary" onclick="askQuestion()">
                 <i class="fas fa-paper-plane"></i> Ask Question
               </button>
@@ -752,7 +757,38 @@
       { name: 'Aurélien Tchouaméni', country: 'France', flag: '🇫🇷' },
       { name: 'Achraf Hakimi', country: 'Morocco', flag: '🇲🇦' },
       { name: 'Rúben Neves', country: 'Portugal', flag: '🇵🇹' },
-      { name: 'Adrien Rabiot', country: 'France', flag: '🇫🇷' }
+      { name: 'Adrien Rabiot', country: 'France', flag: '🇫🇷' },
+      // African Players
+      { name: 'Samuel Eto\'o', country: 'Cameroon', flag: '🇨🇲' },
+      { name: 'Didier Drogba', country: 'Ivory Coast', flag: '🇨🇮' },
+      { name: 'Riyad Mahrez', country: 'Algeria', flag: '🇩🇿' },
+      { name: 'Pierre Aubameyang', country: 'Gabon', flag: '🇬🇦' },
+      { name: 'Eric Bailly', country: 'Ivory Coast', flag: '🇨🇮' },
+      { name: 'Kalidou Koulibaly', country: 'Senegal', flag: '🇸🇳' },
+      { name: 'N\'Golo Kanté', country: 'Guinea', flag: '🇬🇳' },
+      { name: 'Idrissa Gueye', country: 'Senegal', flag: '🇸🇳' },
+      { name: 'Wilfried Zaha', country: 'Ivory Coast', flag: '🇨🇮' },
+      { name: 'Serge Aurier', country: 'Ivory Coast', flag: '🇨🇮' },
+      // Asian Players
+      { name: 'Shinji Kagawa', country: 'Japan', flag: '🇯🇵' },
+      { name: 'Ki Sung-yueng', country: 'South Korea', flag: '🇰🇷' },
+      { name: 'Hirving Lozano', country: 'Mexico', flag: '🇲🇽' },
+      // South American Players
+      { name: 'Alexis Sánchez', country: 'Chile', flag: '🇨🇱' },
+      { name: 'Carlos Vela', country: 'Mexico', flag: '🇲🇽' },
+      { name: 'Raúl Ruidíaz', country: 'Peru', flag: '🇵🇪' },
+      { name: 'Wilmar Barrios', country: 'Colombia', flag: '🇨🇴' },
+      { name: 'Juan Cuadrado', country: 'Colombia', flag: '🇨🇴' },
+      { name: 'Radamel Falcao', country: 'Colombia', flag: '🇨🇴' },
+      { name: 'David Neres', country: 'Brazil', flag: '🇧🇷' },
+      { name: 'Antony', country: 'Brazil', flag: '🇧🇷' },
+      { name: 'Rodrygo', country: 'Brazil', flag: '🇧🇷' },
+      // More European Players
+      { name: 'Patrik Schick', country: 'Czech Republic', flag: '🇨🇿' },
+      { name: 'Dominic Szoboszlai', country: 'Hungary', flag: '🇭🇺' },
+      { name: 'Mateo Kovacic', country: 'Croatia', flag: '🇭🇷' },
+      { name: 'Aleksandar Mitrovic', country: 'Serbia', flag: '🇷🇸' },
+      { name: 'Nikola Vlasic', country: 'Croatia', flag: '🇭🇷' }
     ];
 
     const socket = io();
@@ -931,6 +967,14 @@
       socket.emit('askQuestion', currentRoom, question);
       document.getElementById('questionInput').value = '';
       addToHistory(`You asked: ${question}`, 'you');
+      
+      // Disable ask button until answer is received
+      const askBtn = document.querySelector('#askSection button[onclick="askQuestion()"]');
+      if (askBtn) {
+        askBtn.disabled = true;
+        askBtn.style.opacity = '0.6';
+        askBtn.style.cursor = 'not-allowed';
+      }
     }
 
     function answerQuestion(answer) {
@@ -1000,6 +1044,15 @@
       showScreen('gameScreen');
       currentTurn = turn;
       updateTurnIndicator(players, turn);
+
+      // Display the selected player at the top
+      const player = selectedPlayer || creatorSelectedPlayer;
+      if (player) {
+        document.getElementById('topPlayerFlag').textContent = player.flag;
+        document.getElementById('topPlayerName').textContent = player.name;
+        document.getElementById('topPlayerCountry').textContent = player.country;
+        document.getElementById('selectedPlayerTop').style.display = 'block';
+      }
     });
 
     socket.on('turnChanged', (turn) => {
@@ -1015,6 +1068,14 @@
 
     socket.on('questionAnswered', (answer) => {
       addToHistory(`Opponent answered: ${answer}`, 'opponent');
+      
+      // Re-enable ask button after opponent's answer is received
+      const askBtn = document.querySelector('#askSection button[onclick="askQuestion()"]');
+      if (askBtn) {
+        askBtn.disabled = false;
+        askBtn.style.opacity = '1';
+        askBtn.style.cursor = 'pointer';
+      }
     });
 
     socket.on('wrongGuess', (guess) => {
