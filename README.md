@@ -66,7 +66,56 @@ Then open `http://localhost:3000` in your browser.
    - Wait 2-3 minutes for deployment
    - Get your free URL (e.g., `https://guess-who-multiplayer.onrender.com`)
 
-## 🖥️ Desktop Version (Electron)
+**🚀 Auto-Deployment**: Render automatically redeploys when you push changes to your GitHub repository!
+
+### Other Free Hosting Options with Auto-Deployment
+
+#### Railway.app
+- **Auto-deploy**: ✅ Yes, on every git push
+- **Setup**: Connect GitHub repo, auto-detects Node.js
+- **Free tier**: 512MB RAM, 1GB storage
+
+#### Fly.io
+- **Auto-deploy**: ✅ Yes, via GitHub integration
+- **Setup**: `fly launch` in your project directory
+- **Free tier**: 256MB RAM, generous bandwidth
+
+#### Vercel
+- **Auto-deploy**: ✅ Yes, instant on git push
+- **Setup**: Connect GitHub, auto-detects Node.js
+- **Free tier**: Generous limits, great for static sites
+
+### Manual Deployment Options
+
+#### Heroku (Paid)
+- **Auto-deploy**: Can be configured with GitHub integration
+- **Free tier**: Discontinued, but eco plan available ($5/month)
+
+## 🔄 Auto-Deployment Explained
+
+**Yes!** Most modern hosting platforms automatically redeploy your app when you push changes to your Git repository:
+
+### How It Works:
+1. **Connect Repository**: Link your GitHub repo to the hosting platform
+2. **Push Changes**: When you `git push` to your main branch
+3. **Auto-Trigger**: Platform detects the push and starts deployment
+4. **Build & Deploy**: Automatically installs dependencies and deploys
+5. **Live Update**: Your app is updated within 2-5 minutes
+
+### Benefits:
+- ✅ **Instant Updates**: Changes go live immediately
+- ✅ **Version Control**: Every deployment is tied to a git commit
+- ✅ **Rollback**: Easy to revert to previous versions
+- ✅ **No Manual Steps**: Just push code, platform handles the rest
+
+### Supported Platforms:
+- **Render.com**: ✅ Auto-deploy enabled by default
+- **Railway**: ✅ Auto-deploy on push
+- **Vercel**: ✅ Instant deployments
+- **Fly.io**: ✅ GitHub integration
+- **Netlify**: ✅ For static sites
+
+**Your workflow**: Code locally → `git add .` → `git commit -m "update"` → `git push` → **Auto-deploy!** 🚀
 
 ### Run Desktop App
 
@@ -139,16 +188,21 @@ The app uses CSS custom properties for easy theming. Modify the `:root` variable
 
 ## 📦 Distribution
 
-### Web Deployment
-- **Free Options:** Render.com, Railway.app, Fly.io
-- **Paid Options:** Heroku, DigitalOcean, AWS
+### Web Deployment (Recommended)
+**Auto-deployment platforms** - Your app updates automatically when you push to Git:
+- **Render.com**: ✅ Free tier, auto-deploy on git push
+- **Railway.app**: ✅ Free tier, auto-deploy on git push
+- **Fly.io**: ✅ Free tier, auto-deploy via GitHub integration
+- **Vercel**: ✅ Free tier, instant auto-deploy
+- **Netlify**: ✅ Great for static sites
 
 ### Desktop Distribution
-- Built apps are in `dist/` folder
-- Can be distributed as:
-  - Windows: `.exe` installer
-  - macOS: `.dmg` file
-  - Linux: AppImage
+Built apps are in `dist/` folder after running `npm run dist`:
+- **Windows**: `.exe` installer (auto-updater capable)
+- **macOS**: `.dmg` or `.pkg` file
+- **Linux**: AppImage file
+
+**Note**: Desktop apps need manual updates unless you implement auto-updater
 
 ## 🤝 Contributing
 
