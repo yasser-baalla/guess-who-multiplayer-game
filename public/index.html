@@ -707,7 +707,22 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script>
+  <script>    // Screen navigation function
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+      });
+      document.getElementById(screenId).classList.add('active');
+
+      // Initialize player lists when setup screens are shown
+      if (screenId === 'setupScreen') {
+        initializePlayerList();
+      } else if (screenId === 'roomCreatedScreen') {
+        initializeCreatorPlayerList();
+      }
+    }
+
+    
     // Famous Soccer Players Database
         const soccerPlayers = [
       { name: 'Pelé', country: 'Brazil', flag: '🇧🇷' },
@@ -2215,7 +2230,7 @@
       { name: 'J. Collins', country: 'Wales', flag: '🏴󠁧󠁢󠁷󠁬󠁳󠁿' },
       { name: 'N. Mushekwi', country: 'Zimbabwe', flag: '🏴󠁧󠁿' },
       { name: 'L. Jiménez', country: 'Colombia', flag: '🇨🇴' },
-      { name: 'D. N'Dinga', country: 'Congo', flag: '🏴󠁧󠁿' },
+      { name: 'D. N\'Dinga', country: 'Congo', flag: '🏴󠁧󠁿' },
       { name: 'F. Kroos', country: 'Germany', flag: '🇩🇪' },
       { name: 'M. Mahi', country: 'Morocco', flag: '🇲🇦' },
       { name: 'J. van Overeem', country: 'Netherlands', flag: '🇳🇱' },
@@ -2954,7 +2969,7 @@
       { name: 'J. Schouten', country: 'Netherlands', flag: '🇳🇱' },
       { name: 'P. Hoban', country: 'Republic of Ireland', flag: '🏴󠁧󠁿' },
       { name: 'Dai Lin', country: 'China PR', flag: '🏴󠁧󠁿' },
-      { name: 'F. N'Sakala', country: 'DR Congo', flag: '🏴󠁧󠁿' },
+      { name: 'F. N\'Sakala', country: 'DR Congo', flag: '🏴󠁧󠁿' },
       { name: 'E. Pisano', country: 'Italy', flag: '🇮🇹' },
       { name: 'F. Balmont', country: 'France', flag: '🇫🇷' },
       { name: 'C. Leitgeb', country: 'Austria', flag: '🇦🇹' },
@@ -3480,7 +3495,7 @@
       { name: 'A. Ludwig', country: 'Denmark', flag: '🇩🇰' },
       { name: 'K. Kratz', country: 'Germany', flag: '🇩🇪' },
       { name: 'C. Handke', country: 'Germany', flag: '🇩🇪' },
-      { name: 'V. N'Simba', country: 'DR Congo', flag: '🏴󠁧󠁿' },
+      { name: 'V. N\'Simba', country: 'DR Congo', flag: '🏴󠁧󠁿' },
       { name: 'M. Sauer', country: 'Germany', flag: '🇩🇪' },
       { name: 'C. Sepúlveda', country: 'Chile', flag: '🇨🇱' },
       { name: 'S. Benyamina', country: 'Germany', flag: '🇩🇪' },
@@ -3608,7 +3623,7 @@
       { name: 'A. Miljković', country: 'Serbia', flag: '🇷🇸' },
       { name: 'L. Díaz', country: 'Argentina', flag: '🇦🇷' },
       { name: 'A. Chermiti', country: 'Tunisia', flag: '🇹🇳' },
-      { name: 'F. N'Goma', country: 'France', flag: '🇫🇷' },
+      { name: 'F. N\'Goma', country: 'France', flag: '🇫🇷' },
       { name: 'A. Fuchs', country: 'Germany', flag: '🇩🇪' },
       { name: 'M. Bostwick', country: 'England', flag: '🇬🇧' },
       { name: 'L. Wing', country: 'England', flag: '🇬🇧' },
@@ -5922,7 +5937,7 @@
       { name: 'J. Brady', country: 'Republic of Ireland', flag: '🏴󠁧󠁿' },
       { name: 'J. Doyle-Hayes', country: 'Republic of Ireland', flag: '🏴󠁧󠁿' },
       { name: 'C. Moore', country: 'Scotland', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
-      { name: 'Zhen'ao Wang', country: 'China PR', flag: '🏴󠁧󠁿' },
+      { name: 'Zhen\'ao Wang', country: 'China PR', flag: '🏴󠁧󠁿' },
       { name: 'Dong Honglin', country: 'China PR', flag: '🏴󠁧󠁿' },
       { name: 'D. Bedoya', country: 'Colombia', flag: '🇨🇴' },
       { name: 'S. Mogi', country: 'Japan', flag: '🇯🇵' },
@@ -9344,7 +9359,7 @@
       { name: 'N. Gjorgjev', country: 'North Macedonia', flag: '🇲🇰' },
       { name: 'S. Brodersen', country: 'Germany', flag: '🇩🇪' },
       { name: 'R. Udegbe', country: 'Germany', flag: '🇩🇪' },
-      { name: 'B. N'Gala', country: 'England', flag: '🇬🇧' },
+      { name: 'B. N\'Gala', country: 'England', flag: '🇬🇧' },
       { name: 'A. Condé', country: 'Germany', flag: '🇩🇪' },
       { name: 'W. Balikwisha', country: 'Belgium', flag: '🇧🇪' },
       { name: 'M. Austin', country: 'Australia', flag: '🇦🇺' },
@@ -12295,7 +12310,7 @@
       { name: 'J. Tanaka', country: 'Japan', flag: '🇯🇵' },
       { name: 'Mica Pinto', country: 'Portugal', flag: '🇵🇹' },
       { name: 'W. Thomas', country: 'England', flag: '🇬🇧' },
-      { name: 'M. N'Doye', country: 'Senegal', flag: '🇸🇳' },
+      { name: 'M. N\'Doye', country: 'Senegal', flag: '🇸🇳' },
       { name: 'O. Kökçü', country: 'Netherlands', flag: '🇳🇱' },
       { name: 'T. van de Looi', country: 'Netherlands', flag: '🇳🇱' },
       { name: 'Rui Silva', country: 'Portugal', flag: '🇵🇹' },
@@ -12325,7 +12340,7 @@
       { name: 'E. Galekovic', country: 'Australia', flag: '🇦🇺' },
       { name: 'K. Pedersen', country: 'Denmark', flag: '🇩🇰' },
       { name: 'S. Nieuwpoort', country: 'Netherlands', flag: '🇳🇱' },
-      { name: 'S. N'Guessan', country: 'Ivory Coast', flag: '🇨🇮' },
+      { name: 'S. N\'Guessan', country: 'Ivory Coast', flag: '🇨🇮' },
       { name: 'E. Hooi', country: 'Curacao', flag: '🏴󠁧󠁿' },
       { name: 'A. Fuenmayor', country: 'Venezuela', flag: '🇻🇪' },
       { name: 'F. Flecker', country: 'Austria', flag: '🇦🇹' },
@@ -14772,7 +14787,7 @@
       { name: 'G. Gimbert', country: 'France', flag: '🇫🇷' },
       { name: 'Z. Bakkali', country: 'Belgium', flag: '🇧🇪' },
       { name: 'S. Manolev', country: 'Bulgaria', flag: '🇧🇬' },
-      { name: 'K. N'Doram', country: 'France', flag: '🇫🇷' },
+      { name: 'K. N\'Doram', country: 'France', flag: '🇫🇷' },
       { name: 'Alef', country: 'Brazil', flag: '🇧🇷' },
       { name: 'Javi Lara', country: 'Spain', flag: '🇪🇸' },
       { name: 'T. Hubočan', country: 'Slovakia', flag: '🇸🇰' },
@@ -14924,7 +14939,7 @@
       { name: 'R. Maiello', country: 'Italy', flag: '🇮🇹' },
       { name: 'Park Joo Ho', country: 'Korea Republic', flag: '🏴󠁧󠁿' },
       { name: 'I. Akhmetov', country: 'Russia', flag: '🇷🇺' },
-      { name: 'C. N'Doye', country: 'Senegal', flag: '🇸🇳' },
+      { name: 'C. N\'Doye', country: 'Senegal', flag: '🇸🇳' },
       { name: 'S. Hogan', country: 'Republic of Ireland', flag: '🏴󠁧󠁿' },
       { name: 'L. Benegas', country: 'Argentina', flag: '🇦🇷' },
       { name: 'R. Braña', country: 'Argentina', flag: '🇦🇷' },
@@ -16682,7 +16697,7 @@
       { name: 'I. Sangaré', country: 'Ivory Coast', flag: '🇨🇮' },
       { name: 'C. Chambers', country: 'England', flag: '🇬🇧' },
       { name: 'S. Johansen', country: 'Norway', flag: '🇳🇴' },
-      { name: 'D. N'Doye', country: 'Senegal', flag: '🇸🇳' },
+      { name: 'D. N\'Doye', country: 'Senegal', flag: '🇸🇳' },
       { name: 'Roger Guedes', country: 'Brazil', flag: '🇧🇷' },
       { name: 'N. Etheridge', country: 'Philippines', flag: '🇵🇭' },
       { name: 'A. Pulido', country: 'Mexico', flag: '🇲🇽' },
@@ -17099,7 +17114,7 @@
       { name: 'N. Dirar', country: 'Morocco', flag: '🇲🇦' },
       { name: 'P. Capelle', country: 'France', flag: '🇫🇷' },
       { name: 'J. Ikoné', country: 'France', flag: '🇫🇷' },
-      { name: 'E. N'Dicka', country: 'France', flag: '🇫🇷' },
+      { name: 'E. N\'Dicka', country: 'France', flag: '🇫🇷' },
       { name: 'S. Mounié', country: 'Benin', flag: '🏴󠁧󠁿' },
       { name: 'Y. Atal', country: 'Algeria', flag: '🇩🇿' },
       { name: 'G. Konan', country: 'Ivory Coast', flag: '🇨🇮' },
@@ -18320,20 +18335,6 @@
     });
 
     });
-
-    function showScreen(screenId) {
-      document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-      });
-      document.getElementById(screenId).classList.add('active');
-
-      // Initialize player lists when setup screens are shown
-      if (screenId === 'setupScreen') {
-        initializePlayerList();
-      } else if (screenId === 'roomCreatedScreen') {
-        initializeCreatorPlayerList();
-      }
-    }
 
     function generateRoomCode() {
       return Math.random().toString(36).substring(2, 8).toUpperCase();
