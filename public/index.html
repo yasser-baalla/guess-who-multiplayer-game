@@ -660,6 +660,20 @@
       showMessage('Person chosen! Waiting for the other player to join and choose their person.', 'success');
     }
 
+    function setSecretPerson() {
+      const secretPerson = document.getElementById('secretPerson').value.trim();
+
+      if (!secretPerson) {
+        showMessage('Please enter a famous person.', 'error');
+        return;
+      }
+
+      socket.emit('setSecretPerson', currentRoom, secretPerson);
+      document.getElementById('setupScreen').style.display = 'none';
+      document.getElementById('waitingMessage').style.display = 'block';
+      showMessage('Person chosen! Waiting for the other player to choose their person.', 'success');
+    }
+
     function askQuestion() {
       const question = document.getElementById('questionInput').value.trim();
 
