@@ -1,0 +1,40 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Commit and push JavaScript fixes",
+			"type": "shell",
+			"command": "git add . && git commit -m \"fix: Resolve JavaScript syntax errors in expanded player database\n\n- Escape apostrophes in player names (N'Diaye, D'Ambrosio, etc.)\n- Fix 'Unexpected identifier' errors caused by unescaped apostrophes\n- Ensure all 17,525 players load without JavaScript syntax errors\n- Player names with apostrophes now properly escaped for compatibility\n\nDatabase expansion from 572 to 17,525 players now fully functional.\" && git push origin master"
+		},
+		{
+			"label": "Stage all changes",
+			"type": "shell",
+			"command": "git add ."
+		},
+		{
+			"label": "Commit the fixes",
+			"type": "shell",
+			"command": "git commit -m \"fix: Resolve JavaScript syntax errors in expanded player database\""
+		},
+		{
+			"label": "Commit the fixes",
+			"type": "shell",
+			"command": "git commit -m 'fix: Resolve JavaScript syntax errors in expanded player database'"
+		},
+		{
+			"label": "Commit the fixes",
+			"type": "shell",
+			"command": "git commit -m \"fix: JavaScript syntax errors resolved\""
+		},
+		{
+			"label": "Check git status",
+			"type": "shell",
+			"command": "git status"
+		},
+		{
+			"label": "Add remaining changes",
+			"type": "shell",
+			"command": "git add ."
+		}
+	]
+}

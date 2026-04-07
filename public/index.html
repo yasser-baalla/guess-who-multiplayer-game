@@ -1694,7 +1694,7 @@
       { name: 'K. Stöger', country: 'Austria', flag: '🇦🇹' },
       { name: 'K. Linetty', country: 'Poland', flag: '🇵🇱' },
       { name: 'S. Bell', country: 'Germany', flag: '🇩🇪' },
-      { name: 'A. N'Diaye', country: 'Senegal', flag: '🇸🇳' },
+      { name: 'A. N\'Diaye', country: 'Senegal', flag: '🇸🇳' },
       { name: 'Y. Yazıcı', country: 'Turkey', flag: '🇹🇷' },
       { name: 'B. Oczipka', country: 'Germany', flag: '🇩🇪' },
       { name: 'F. Valverde', country: 'Uruguay', flag: '🇺🇾' },
@@ -18317,6 +18317,8 @@
     socket.on('playerDisconnected', () => {
       showMessage('The other player disconnected. Game ended.', 'error');
       setTimeout(() => location.reload(), 3000);
+    });
+
     });
 
     function showScreen(screenId) {
