@@ -1479,14 +1479,16 @@
         listEl.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,0.35);font-size:0.9rem;"><i class="fas fa-search" style="margin-right:8px;"></i>Type to search players...</div>';
         return;
       }
-      const lower = term.toLowerCase();
+      // Normalize: strip diacritics so "e" matches "é", "o" matches "ö", etc.
+      const normalize = s => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+      const lower = normalize(term);
       const starts = [];   // name starts with term  → shown first
       const contains = []; // name/country contains term → shown after
 
       for (let i = 0; i < soccerPlayers.length; i++) {
         const p = soccerPlayers[i];
-        const name = p.name.toLowerCase();
-        const country = p.country.toLowerCase();
+        const name = normalize(p.name);
+        const country = normalize(p.country);
         if (name.startsWith(lower)) {
           starts.push({ player: p, index: i });
         } else if (name.includes(lower) || country.includes(lower)) {
