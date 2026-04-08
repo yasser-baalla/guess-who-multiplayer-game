@@ -827,33 +827,168 @@
     }
 
     /* ============================================================
+       MY SECRET PLAYER BANNER (top of game screen)
+    ============================================================ */
+    .my-player-banner {
+      background: rgba(124, 92, 252, 0.1);
+      border: 1px solid rgba(124, 92, 252, 0.35);
+      border-radius: 14px;
+      padding: 14px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 18px rgba(124, 92, 252, 0.15);
+    }
+
+    .my-player-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(124, 92, 252, 0.8);
+      margin-bottom: 8px;
+    }
+
+    .my-player-body {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .my-player-flag {
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .my-player-name {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f1f1f1;
+    }
+
+    .my-player-country {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.45);
+      margin-top: 2px;
+    }
+
+    /* ============================================================
+       GUESS LIST — same look as player-list but compact
+    ============================================================ */
+    .guess-list {
+      max-height: 220px;
+    }
+
+    /* ============================================================
        RESPONSIVE
     ============================================================ */
-    @media (max-width: 768px) {
+    @media (max-width: 860px) {
       .game-board {
         grid-template-columns: 1fr;
-        gap: 20px;
+        gap: 16px;
+      }
+
+      .game-sidebar {
+        /* on mobile becomes a compact chat strip */
+        max-height: 220px;
+        overflow-y: auto;
+      }
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+        align-items: flex-start;
+      }
+
+      .app {
+        border-radius: 14px;
+      }
+
+      .header {
+        padding: 18px 16px;
       }
 
       .header h1 {
-        font-size: 1.7rem;
+        font-size: 1.35rem;
+      }
+
+      .header p {
+        font-size: 0.85rem;
       }
 
       .main-content {
-        padding: 24px 20px;
+        padding: 16px 14px;
+      }
+
+      /* Scoreboard stacks on tiny screens */
+      .scoreboard {
+        padding: 12px 10px;
+        gap: 0;
+      }
+
+      .score-value {
+        font-size: 2.2rem;
+      }
+
+      .score-name {
+        font-size: 0.75rem;
+      }
+
+      /* Buttons: full width, smaller */
+      .btn {
+        min-width: unset;
+        width: 100%;
+        padding: 14px 16px;
+        font-size: 1rem;
       }
 
       .action-buttons {
         flex-direction: column;
-        align-items: center;
       }
 
-      .btn {
-        min-width: 240px;
+      /* Answer buttons row stays horizontal */
+      #answerSection .btn {
+        width: auto;
+        flex: 1;
+        padding: 12px 8px;
+        font-size: 0.88rem;
+      }
+
+      .turn-indicator {
+        font-size: 0.9rem;
+        padding: 14px;
+      }
+
+      .action-card {
+        padding: 16px;
+      }
+
+      .game-main {
+        padding: 16px;
       }
 
       .player-list {
-        max-height: 260px;
+        max-height: 220px;
+      }
+
+      .guess-list {
+        max-height: 180px;
+      }
+
+      .my-player-name {
+        font-size: 1.05rem;
+      }
+
+      .room-code-display .code {
+        font-size: 1.5rem;
+        letter-spacing: 4px;
+      }
+
+      /* Welcome screen buttons full width */
+      .welcome-screen .action-buttons .btn {
+        min-width: unset;
+        width: 100%;
+        max-width: 320px;
       }
     }
   </style>
@@ -1007,10 +1142,15 @@
 
       <!-- Game Screen -->
       <div id="gameScreen" class="screen">
-        <div id="selectedPlayerTop" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 2px solid #3b82f6; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; display: none;">
-          <div style="font-size: 2rem; margin-bottom: 10px;" id="topPlayerFlag"></div>
-          <div style="font-size: 1.5rem; font-weight: 700; color: #1f2937;" id="topPlayerName"></div>
-          <div style="font-size: 0.9rem; color: #6b7280; margin-top: 5px;" id="topPlayerCountry"></div>
+        <div id="selectedPlayerTop" class="my-player-banner" style="display:none;">
+          <div class="my-player-label"><i class="fas fa-user-secret"></i> Your secret player</div>
+          <div class="my-player-body">
+            <span id="topPlayerFlag" class="my-player-flag"></span>
+            <div>
+              <div id="topPlayerName" class="my-player-name"></div>
+              <div id="topPlayerCountry" class="my-player-country"></div>
+            </div>
+          </div>
         </div>
         <div class="game-board">
           <div class="game-main">
@@ -1043,10 +1183,20 @@
             </div>
 
             <div id="guessSection" class="action-card" style="display: none;">
-              <h4><i class="fas fa-lightbulb"></i> Make a Guess</h4>
-              <input type="text" id="guessInput" class="form-input" placeholder="Who do you think it is?">
-              <button class="btn btn-primary" onclick="makeGuess()">
-                <i class="fas fa-bullseye"></i> Make Guess
+              <h4><i class="fas fa-bullseye"></i> Make a Guess</h4>
+              <div class="player-search">
+                <input type="text" id="guessSearch" class="form-input" placeholder="Search player or country..." oninput="filterGuessList()">
+              </div>
+              <div id="guessList" class="player-list guess-list"></div>
+              <div id="guessSelectedDisplay" class="selected-player-display">
+                <div class="player-flag" id="guessSelectedFlag"></div>
+                <div class="player-info">
+                  <div class="player-name" id="guessSelectedName"></div>
+                  <div class="player-country" id="guessSelectedCountry"></div>
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="makeGuess()" id="makeGuessBtn" disabled style="opacity:0.5;">
+                <i class="fas fa-bullseye"></i> Confirm Guess
               </button>
             </div>
           </div>
@@ -1115,6 +1265,7 @@
     let selectedPlayer = null;
     let creatorSelectedPlayer = null;
     let waitingForAnswer = false; // true after I ask, until opponent answers
+    let guessedPlayer = null;     // player selected in the guess list
 
     // ── Socket event handlers ────────────────────────────────────
 
@@ -1147,6 +1298,10 @@
       showScreen('gameScreen');
       currentTurn = turn;
       waitingForAnswer = false;
+
+      // Build guess list (lazy — only once)
+      guessedPlayer = null;
+      initializeGuessList();
 
       // Populate scoreboard names
       const me = players.find(p => p.id === socket.id);
@@ -1224,6 +1379,7 @@
       waitingForAnswer = false;
       selectedPlayer = null;
       creatorSelectedPlayer = null;
+      guessedPlayer = null;
       document.getElementById('history').innerHTML = '';
       document.getElementById('answerSection').style.display = 'none';
       document.getElementById('selectedPlayerTop').style.display = 'none';
@@ -1435,16 +1591,62 @@
       addToHistory(`Rejected (already asked): "${question}"`, 'rejected');
     }
 
-    function makeGuess() {
-      const guess = document.getElementById('guessInput').value.trim();
+    function initializeGuessList() {
+      const list = document.getElementById('guessList');
+      list.innerHTML = soccerPlayers.map((player, index) => `
+        <div class="player-item" onclick="selectGuessPlayer(${index})">
+          <div class="player-flag">${player.flag}</div>
+          <div class="player-info">
+            <div class="player-name">${player.name}</div>
+            <div class="player-country">${player.country}</div>
+          </div>
+        </div>
+      `).join('');
+    }
 
-      if (!guess) {
-        showMessage('Please enter a guess.', 'error');
+    function filterGuessList() {
+      const term = document.getElementById('guessSearch').value.toLowerCase();
+      document.querySelectorAll('#guessList .player-item').forEach((item, index) => {
+        const p = soccerPlayers[index];
+        const match = p.name.toLowerCase().includes(term) || p.country.toLowerCase().includes(term);
+        item.style.display = match ? 'flex' : 'none';
+      });
+    }
+
+    function selectGuessPlayer(index) {
+      guessedPlayer = soccerPlayers[index];
+
+      document.querySelectorAll('#guessList .player-item').forEach((item, i) => {
+        item.classList.toggle('selected', i === index);
+      });
+
+      document.getElementById('guessSelectedFlag').textContent = guessedPlayer.flag;
+      document.getElementById('guessSelectedName').textContent = guessedPlayer.name;
+      document.getElementById('guessSelectedCountry').textContent = guessedPlayer.country;
+      document.getElementById('guessSelectedDisplay').classList.add('active');
+
+      const btn = document.getElementById('makeGuessBtn');
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }
+
+    function makeGuess() {
+      if (!guessedPlayer) {
+        showMessage('Please select a player to guess.', 'error');
         return;
       }
 
-      socket.emit('makeGuess', currentRoom, guess);
-      document.getElementById('guessInput').value = '';
+      socket.emit('makeGuess', currentRoom, guessedPlayer.name);
+
+      // Reset guess selection for next turn
+      guessedPlayer = null;
+      document.getElementById('guessSelectedDisplay').classList.remove('active');
+      document.getElementById('guessSearch').value = '';
+      filterGuessList();
+      document.querySelectorAll('#guessList .player-item').forEach(item => item.classList.remove('selected'));
+      const btn = document.getElementById('makeGuessBtn');
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
     }
 
     function updateScoreboard(scores, winnerId) {
