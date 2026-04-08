@@ -119,6 +119,26 @@ function initializeGameServer(app, io) {
       io.to(roomId).emit('turnChanged', room.currentTurn);
     });
 
+    socket.on('rejectQuestion', (roomId) => {
+      const room = rooms[roomId];
+      if (!room) return;
+
+      // Find the rejected question (last one asked)
+      const lastQuestion = room.questions[room.questions.length - 1];
+      const questionText = lastQuestion ? lastQuestion.question : '';
+
+      // Remove it from history so it doesn't count
+      if (lastQuestion) room.questions.pop();
+
+      // Clear the waiting state — turn stays with the original asker
+      room.waitingForAnswer = false;
+      // currentTurn stays the same (asker must ask again)
+
+      // Notify the asker their question was rejected
+      const asker = room.players.find(p => p.id !== socket.id);
+      if (asker) io.to(asker.id).emit('questionRejected', questionText);
+    });
+
     socket.on('makeGuess', (roomId, guess) => {
       const room = rooms[roomId];
       if (!room || room.gameState !== 'playing' || room.currentTurn !== socket.id) return;

@@ -235,6 +235,17 @@
       box-shadow: 0 0 20px rgba(124, 92, 252, 0.35);
     }
 
+    .btn-danger {
+      background: linear-gradient(135deg, #ff5252 0%, #c62828 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(255, 82, 82, 0.3);
+    }
+
+    .btn-danger:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 22px rgba(255, 82, 82, 0.5);
+    }
+
     /* ============================================================
        FORM ELEMENTS
     ============================================================ */
@@ -486,6 +497,14 @@
     .question-item.opponent {
       border-left-color: #ffaa00;
       background: rgba(255, 170, 0, 0.05);
+    }
+
+    .question-item.rejected {
+      border-left-color: #ff5252;
+      background: rgba(255, 82, 82, 0.08);
+      color: rgba(255, 120, 120, 0.9);
+      text-decoration: line-through;
+      opacity: 0.75;
     }
 
     /* ============================================================
@@ -924,13 +943,16 @@
 
             <div id="answerSection" class="action-card" style="display: none;">
               <h4><i class="fas fa-reply"></i> Answer the Question</h4>
-              <p id="questionToAnswer" style="margin-bottom: 20px; font-size: 1.1rem; color: #374151;"></p>
-              <div style="display: flex; gap: 12px;">
-                <button class="btn btn-secondary" onclick="answerQuestion('yes')" style="flex: 1;">
+              <p id="questionToAnswer" style="margin-bottom: 20px; font-size: 1.1rem;"></p>
+              <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="answerQuestion('yes')" style="flex: 1; min-width: 80px;">
                   <i class="fas fa-check"></i> Yes
                 </button>
-                <button class="btn btn-outline" onclick="answerQuestion('no')" style="flex: 1;">
+                <button class="btn btn-outline" onclick="answerQuestion('no')" style="flex: 1; min-width: 80px;">
                   <i class="fas fa-times"></i> No
+                </button>
+                <button class="btn btn-danger" onclick="rejectQuestion()" style="flex: 1; min-width: 80px;" title="Reject: this question was already asked">
+                  <i class="fas fa-ban"></i> Already asked
                 </button>
               </div>
             </div>
@@ -1077,6 +1099,13 @@
     socket.on('questionAnswered', (answer) => {
       addToHistory(`Opponent answered: ${answer}`, 'opponent');
       // turnChanged will fire right after and re-enable ask/guess sections
+    });
+
+    socket.on('questionRejected', (question) => {
+      waitingForAnswer = false;
+      updateTurnIndicator(); // re-show ask/guess — still your turn
+      addToHistory(`Your question was rejected (already asked): "${question}"`, 'rejected');
+      showMessage('<i class="fas fa-ban"></i> Question rejected — it was already asked! Try a different one.', 'error');
     });
 
     socket.on('wrongGuess', (guess) => {
@@ -1264,6 +1293,13 @@
       socket.emit('answerQuestion', currentRoom, answer);
       document.getElementById('answerSection').style.display = 'none';
       addToHistory(`You answered: ${answer}`, 'you');
+    }
+
+    function rejectQuestion() {
+      const question = document.getElementById('questionToAnswer').textContent;
+      socket.emit('rejectQuestion', currentRoom);
+      document.getElementById('answerSection').style.display = 'none';
+      addToHistory(`Rejected (already asked): "${question}"`, 'rejected');
     }
 
     function makeGuess() {
