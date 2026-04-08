@@ -755,6 +755,78 @@
     }
 
     /* ============================================================
+       SCOREBOARD
+    ============================================================ */
+    .scoreboard {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 16px 24px;
+      margin-bottom: 24px;
+    }
+
+    .score-panel {
+      flex: 1;
+      text-align: center;
+      padding: 12px 16px;
+      border-radius: 12px;
+      transition: background 0.4s ease;
+    }
+
+    .score-panel.winner-flash {
+      background: rgba(0, 230, 118, 0.12);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+    }
+
+    .score-name {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.55);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .score-value {
+      display: block;
+      font-family: 'Oswald', sans-serif;
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: #f1f1f1;
+      line-height: 1;
+      transition: transform 0.15s ease, color 0.3s ease;
+    }
+
+    .score-value.bump {
+      animation: scoreBump 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+      color: #00e676;
+    }
+
+    @keyframes scoreBump {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.55); }
+      60%  { transform: scale(0.92); }
+      100% { transform: scale(1); }
+    }
+
+    .score-vs {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.25);
+      padding: 0 16px;
+      flex-shrink: 0;
+    }
+
+    /* ============================================================
        RESPONSIVE
     ============================================================ */
     @media (max-width: 768px) {
@@ -794,6 +866,19 @@
     </div>
 
     <div class="main-content">
+      <!-- Scoreboard — hidden until game starts, persists across rounds -->
+      <div id="scoreboard" class="scoreboard" style="display:none;">
+        <div class="score-panel" id="myScorePanel">
+          <span class="score-name" id="myScoreName">You</span>
+          <span class="score-value" id="myScoreValue">0</span>
+        </div>
+        <div class="score-vs">VS</div>
+        <div class="score-panel" id="oppScorePanel">
+          <span class="score-name" id="oppScoreName">Opponent</span>
+          <span class="score-value" id="oppScoreValue">0</span>
+        </div>
+      </div>
+
       <!-- Welcome Screen -->
       <div id="welcomeScreen" class="screen active welcome-screen">
         <h2>Welcome to Guess Who!</h2>
@@ -979,7 +1064,7 @@
           <h2><i class="fas fa-trophy"></i> Game Over!</h2>
           <div id="gameOverMessage" class="winner-message"></div>
           <div class="action-buttons">
-            <button class="btn btn-primary" onclick="location.reload()">
+            <button class="btn btn-primary" onclick="playAgain()">
               <i class="fas fa-redo"></i> Play Again
             </button>
             <button class="btn btn-outline" onclick="showScreen('welcomeScreen')">
@@ -1063,6 +1148,13 @@
       currentTurn = turn;
       waitingForAnswer = false;
 
+      // Populate scoreboard names
+      const me = players.find(p => p.id === socket.id);
+      const opp = players.find(p => p.id !== socket.id);
+      document.getElementById('myScoreName').textContent = me ? me.name : 'You';
+      document.getElementById('oppScoreName').textContent = opp ? opp.name : 'Opponent';
+      document.getElementById('scoreboard').style.display = 'flex';
+
       // Display the selected player at the top
       const player = selectedPlayer || creatorSelectedPlayer;
       if (player) {
@@ -1113,7 +1205,7 @@
       addToHistory(`You guessed: ${guess} (wrong)`, 'you');
     });
 
-    socket.on('gameOver', (winnerId, correctGuess) => {
+    socket.on('gameOver', (winnerId, correctGuess, scores) => {
       showScreen('gameOverScreen');
       const isWinner = winnerId === socket.id;
       const message = isWinner
@@ -1122,6 +1214,47 @@
       document.getElementById('gameOverMessage').innerHTML = message;
       document.getElementById('gameOverMessage').className = `winner-message ${isWinner ? 'winner' : 'loser'}`;
       addToHistory(message, 'system');
+
+      // Update scoreboard
+      if (scores) updateScoreboard(scores, winnerId);
+    });
+
+    socket.on('gameRestart', (creatorId, scores) => {
+      // Reset local state
+      waitingForAnswer = false;
+      selectedPlayer = null;
+      creatorSelectedPlayer = null;
+      document.getElementById('history').innerHTML = '';
+      document.getElementById('answerSection').style.display = 'none';
+      document.getElementById('selectedPlayerTop').style.display = 'none';
+
+      // Update scoreboard with preserved scores
+      if (scores) {
+        document.getElementById('myScoreValue').textContent = scores[socket.id] || 0;
+        // find opp id by exclusion — scores has exactly 2 keys
+        const oppId = Object.keys(scores).find(id => id !== socket.id);
+        if (oppId) document.getElementById('oppScoreValue').textContent = scores[oppId] || 0;
+      }
+      // Clear winner flash
+      document.getElementById('myScorePanel').classList.remove('winner-flash');
+      document.getElementById('oppScorePanel').classList.remove('winner-flash');
+
+      // Go to appropriate selection screen
+      if (socket.id === creatorId) {
+        showScreen('roomCreatedScreen');
+        document.getElementById('creatorPlayerSearch').disabled = false;
+        document.getElementById('creatorReadyBtn').disabled = false;
+        document.getElementById('creatorReadyBtn').textContent = "I'm Ready!";
+        document.querySelectorAll('#creatorPlayerList .player-item').forEach(item => {
+          item.style.pointerEvents = '';
+          item.style.opacity = '';
+        });
+      } else {
+        showScreen('setupScreen');
+        document.getElementById('waitingMessage').style.display = 'none';
+        document.getElementById('setupScreen').style.display = '';
+      }
+      showMessage('<i class="fas fa-redo"></i> New round! Choose your player.', 'info');
     });
 
     socket.on('playerDisconnected', () => {
@@ -1312,6 +1445,30 @@
 
       socket.emit('makeGuess', currentRoom, guess);
       document.getElementById('guessInput').value = '';
+    }
+
+    function updateScoreboard(scores, winnerId) {
+      const myVal = document.getElementById('myScoreValue');
+      const oppVal = document.getElementById('oppScoreValue');
+      const oppId = Object.keys(scores).find(id => id !== socket.id);
+
+      myVal.textContent = scores[socket.id] || 0;
+      if (oppId) oppVal.textContent = scores[oppId] || 0;
+
+      // Bump animation on the winner's score
+      const winnerEl = winnerId === socket.id ? myVal : oppVal;
+      const winnerPanel = winnerId === socket.id
+        ? document.getElementById('myScorePanel')
+        : document.getElementById('oppScorePanel');
+
+      winnerEl.classList.remove('bump');
+      void winnerEl.offsetWidth; // reflow to restart animation
+      winnerEl.classList.add('bump');
+      winnerPanel.classList.add('winner-flash');
+    }
+
+    function playAgain() {
+      socket.emit('restartGame', currentRoom);
     }
 
     function addToHistory(message, type = 'opponent') {

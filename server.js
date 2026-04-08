@@ -41,7 +41,8 @@ function initializeGameServer(app, io) {
           gameState: 'waiting',
           currentTurn: null,
           questions: [],
-          guesses: []
+          guesses: [],
+          scores: {}
         };
       }
 
@@ -54,6 +55,8 @@ function initializeGameServer(app, io) {
           secretPerson: null,
           ready: false
         });
+        // Initialise score for this player (preserve if rejoining after restart)
+        if (room.scores[socket.id] === undefined) room.scores[socket.id] = 0;
 
         socket.emit('joinedRoom', roomId, room.players.length);
 
@@ -154,7 +157,8 @@ function initializeGameServer(app, io) {
 
       if (correct) {
         room.gameState = 'finished';
-        io.to(roomId).emit('gameOver', socket.id, guess);
+        room.scores[socket.id] = (room.scores[socket.id] || 0) + 1;
+        io.to(roomId).emit('gameOver', socket.id, guess, room.scores);
       } else {
         socket.emit('wrongGuess', guess);
         // Continue game, turn stays with current player? Or switch?
@@ -162,6 +166,26 @@ function initializeGameServer(app, io) {
         room.currentTurn = otherPlayer.id;
         io.to(roomId).emit('turnChanged', room.currentTurn);
       }
+    });
+
+    socket.on('restartGame', (roomId) => {
+      const room = rooms[roomId];
+      if (!room || room.players.length < 2) return;
+
+      // Reset round state — scores survive
+      room.gameState = 'setup';
+      room.currentTurn = null;
+      room.questions = [];
+      room.guesses = [];
+      room.waitingForAnswer = false;
+      room.players.forEach(p => {
+        p.secretPerson = null;
+        p.ready = false;
+      });
+
+      // creatorId = first player who joined (index 0)
+      const creatorId = room.players[0].id;
+      io.to(roomId).emit('gameRestart', creatorId, room.scores);
     });
 
     socket.on('disconnect', () => {
