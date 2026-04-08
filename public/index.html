@@ -1007,17 +1007,31 @@
     let currentTurn = null;
     let selectedPlayer = null;
     let creatorSelectedPlayer = null;
+    let waitingForAnswer = false; // true after I ask, until opponent answers
 
-    // Function definitions (moved to top so they're available when HTML calls them)
-    // Socket event handlers
+    // ── Socket event handlers ────────────────────────────────────
+
     socket.on('joinedRoom', (roomId, playerCount) => {
       if (document.getElementById('roomCreatedScreen').classList.contains('active')) {
-        // We're the room creator, already on roomCreatedScreen
         showMessage(`Room created! Waiting for another player... (${playerCount}/2)`, 'success');
       } else {
-        // We're joining, go to setup screen
         showScreen('setupScreen');
         showMessage(`Joined room ${roomId}. Waiting for another player... (${playerCount}/2)`, 'success');
+      }
+    });
+
+    socket.on('roomFull', (players) => {
+      showMessage('Room is full! Both players are here.', 'success');
+      if (document.getElementById('roomCreatedScreen').classList.contains('active')) {
+        const waitingRoom = document.querySelector('.waiting-room h3');
+        waitingRoom.innerHTML = '<i class="fas fa-users"></i> Player joined! Choose your person above.';
+        document.querySelector('.spinner').style.display = 'none';
+        const roomCodeDisplay = document.getElementById('roomCodeDisplay');
+        if (roomCodeDisplay && !roomCodeDisplay.textContent.trim()) {
+          roomCodeDisplay.textContent = currentRoom;
+        }
+      } else {
+        showScreen('setupScreen');
       }
     });
 
@@ -1025,7 +1039,7 @@
       document.getElementById('waitingMessage').style.display = 'none';
       showScreen('gameScreen');
       currentTurn = turn;
-      updateTurnIndicator(players, turn);
+      waitingForAnswer = false;
 
       // Display the selected player at the top
       const player = selectedPlayer || creatorSelectedPlayer;
@@ -1035,11 +1049,23 @@
         document.getElementById('topPlayerCountry').textContent = player.country;
         document.getElementById('selectedPlayerTop').style.display = 'block';
       }
+
+      const iStarter = turn === socket.id;
+      updateTurnIndicator();
+      if (iStarter) {
+        showMessage('<i class="fas fa-rocket"></i> You go first! Ask a question.', 'success');
+      } else {
+        showMessage('<i class="fas fa-hourglass-start"></i> Opponent goes first. Answer their question!', 'info');
+      }
     });
 
     socket.on('turnChanged', (turn) => {
       currentTurn = turn;
-      updateTurnIndicator(null, turn);
+      waitingForAnswer = false;
+      updateTurnIndicator();
+      if (turn === socket.id) {
+        showMessage('<i class="fas fa-bolt"></i> Your turn! Ask a question or make a guess.', 'info');
+      }
     });
 
     socket.on('questionAsked', (question, askerId) => {
@@ -1050,14 +1076,7 @@
 
     socket.on('questionAnswered', (answer) => {
       addToHistory(`Opponent answered: ${answer}`, 'opponent');
-      
-      // Re-enable ask button after opponent's answer is received
-      const askBtn = document.querySelector('#askSection button[onclick="askQuestion()"]');
-      if (askBtn) {
-        askBtn.disabled = false;
-        askBtn.style.opacity = '1';
-        askBtn.style.cursor = 'pointer';
-      }
+      // turnChanged will fire right after and re-enable ask/guess sections
     });
 
     socket.on('wrongGuess', (guess) => {
@@ -1067,12 +1086,10 @@
 
     socket.on('gameOver', (winnerId, correctGuess) => {
       showScreen('gameOverScreen');
-
       const isWinner = winnerId === socket.id;
       const message = isWinner
         ? `<i class="fas fa-trophy"></i> Congratulations! You won! The person was <strong>${correctGuess}</strong>.`
         : `<i class="fas fa-heart-broken"></i> Game over! Your opponent guessed correctly: <strong>${correctGuess}</strong>.`;
-
       document.getElementById('gameOverMessage').innerHTML = message;
       document.getElementById('gameOverMessage').className = `winner-message ${isWinner ? 'winner' : 'loser'}`;
       addToHistory(message, 'system');
@@ -1238,14 +1255,9 @@
       socket.emit('askQuestion', currentRoom, question);
       document.getElementById('questionInput').value = '';
       addToHistory(`You asked: ${question}`, 'you');
-      
-      // Disable ask button until answer is received
-      const askBtn = document.querySelector('#askSection button[onclick="askQuestion()"]');
-      if (askBtn) {
-        askBtn.disabled = true;
-        askBtn.style.opacity = '0.6';
-        askBtn.style.cursor = 'not-allowed';
-      }
+
+      waitingForAnswer = true;
+      updateTurnIndicator();
     }
 
     function answerQuestion(answer) {
@@ -1284,113 +1296,30 @@
       setTimeout(() => div.remove(), 5000);
     }
 
-    socket.on('joinedRoom', (roomId, playerCount) => {
-      if (document.getElementById('roomCreatedScreen').classList.contains('active')) {
-        // We're the room creator, already on roomCreatedScreen
-        showMessage(`Room created! Waiting for another player... (${playerCount}/2)`, 'success');
-      } else {
-        // We're joining, go to setup screen
-        showScreen('setupScreen');
-        showMessage(`Joined room ${roomId}. Waiting for another player... (${playerCount}/2)`, 'success');
-      }
-    });
 
-    socket.on('roomFull', (players) => {
-      showMessage('Room is full! Both players are here.', 'success');
-
-      // If we're the room creator on roomCreatedScreen, stay there but update status
-      if (document.getElementById('roomCreatedScreen').classList.contains('active')) {
-        // Room creator is already on roomCreatedScreen
-        const waitingRoom = document.querySelector('.waiting-room h3');
-        waitingRoom.innerHTML = '<i class="fas fa-users"></i> Player joined! Choose your person above.';
-        document.querySelector('.spinner').style.display = 'none';
-        // Ensure room code stays visible
-        const roomCodeDisplay = document.getElementById('roomCodeDisplay');
-        if (roomCodeDisplay && !roomCodeDisplay.textContent.trim()) {
-          roomCodeDisplay.textContent = currentRoom;
-        }
-      } else {
-        // Joining player goes to setup screen
-        showScreen('setupScreen');
-      }
-    });
-
-    socket.on('gameStart', (players, turn) => {
-      document.getElementById('waitingMessage').style.display = 'none';
-      showScreen('gameScreen');
-      currentTurn = turn;
-      updateTurnIndicator(players, turn);
-
-      // Display the selected player at the top
-      const player = selectedPlayer || creatorSelectedPlayer;
-      if (player) {
-        document.getElementById('topPlayerFlag').textContent = player.flag;
-        document.getElementById('topPlayerName').textContent = player.name;
-        document.getElementById('topPlayerCountry').textContent = player.country;
-        document.getElementById('selectedPlayerTop').style.display = 'block';
-      }
-    });
-
-    socket.on('turnChanged', (turn) => {
-      currentTurn = turn;
-      updateTurnIndicator(null, turn);
-    });
-
-    socket.on('questionAsked', (question, askerId) => {
-      document.getElementById('questionToAnswer').textContent = question;
-      document.getElementById('answerSection').style.display = 'block';
-      addToHistory(`Opponent asked: ${question}`, 'opponent');
-    });
-
-    socket.on('questionAnswered', (answer) => {
-      addToHistory(`Opponent answered: ${answer}`, 'opponent');
-      
-      // Re-enable ask button after opponent's answer is received
-      const askBtn = document.querySelector('#askSection button[onclick="askQuestion()"]');
-      if (askBtn) {
-        askBtn.disabled = false;
-        askBtn.style.opacity = '1';
-        askBtn.style.cursor = 'pointer';
-      }
-    });
-
-    socket.on('wrongGuess', (guess) => {
-      showMessage(`Wrong guess: ${guess}`, 'error');
-      addToHistory(`You guessed: ${guess} (wrong)`, 'you');
-    });
-
-    socket.on('gameOver', (winnerId, correctGuess) => {
-      showScreen('gameOverScreen');
-
-      const isWinner = winnerId === socket.id;
-      const message = isWinner
-        ? `<i class="fas fa-trophy"></i> Congratulations! You won! The person was <strong>${correctGuess}</strong>.`
-        : `<i class="fas fa-heart-broken"></i> Game over! Your opponent guessed correctly: <strong>${correctGuess}</strong>.`;
-
-      document.getElementById('gameOverMessage').innerHTML = message;
-      document.getElementById('gameOverMessage').className = `winner-message ${isWinner ? 'winner' : 'loser'}`;
-      addToHistory(message, 'system');
-    });
-
-    socket.on('playerDisconnected', () => {
-      showMessage('The other player disconnected. Game ended.', 'error');
-      setTimeout(() => location.reload(), 3000);
-    });
-
-    function updateTurnIndicator(players, turn) {
+    function updateTurnIndicator() {
       const indicator = document.getElementById('turnIndicator');
-      const isMyTurn = turn === socket.id;
+      const isMyTurn = currentTurn === socket.id;
 
-      if (isMyTurn) {
-        indicator.className = 'turn-indicator your-turn';
-        indicator.innerHTML = '<i class="fas fa-play-circle"></i> It\'s your turn!';
-      } else {
+      if (waitingForAnswer) {
+        // I asked — waiting for opponent to answer
         indicator.className = 'turn-indicator waiting';
-        indicator.innerHTML = '<i class="fas fa-pause-circle"></i> Waiting for opponent\'s turn...';
+        indicator.innerHTML = '<i class="fas fa-hourglass-half"></i> Waiting for opponent\'s answer...';
+        document.getElementById('askSection').style.display = 'none';
+        document.getElementById('guessSection').style.display = 'none';
+      } else if (isMyTurn) {
+        // My turn to ask
+        indicator.className = 'turn-indicator your-turn';
+        indicator.innerHTML = '<i class="fas fa-play-circle"></i> Your turn — ask a question or make a guess!';
+        document.getElementById('askSection').style.display = 'block';
+        document.getElementById('guessSection').style.display = 'block';
+      } else {
+        // Opponent's turn to ask
+        indicator.className = 'turn-indicator waiting';
+        indicator.innerHTML = '<i class="fas fa-pause-circle"></i> Opponent\'s turn — answer their question when it comes!';
+        document.getElementById('askSection').style.display = 'none';
+        document.getElementById('guessSection').style.display = 'none';
       }
-
-      document.getElementById('askSection').style.display = isMyTurn ? 'block' : 'none';
-      document.getElementById('guessSection').style.display = isMyTurn ? 'block' : 'none';
     }
   </script>
 </body>

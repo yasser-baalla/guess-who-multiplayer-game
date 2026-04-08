@@ -79,7 +79,10 @@ function initializeGameServer(app, io) {
         const readyPlayers = room.players.filter(p => p.ready);
         if (readyPlayers.length === 2) {
           room.gameState = 'playing';
-          room.currentTurn = room.players[0].id; // First player starts
+          room.waitingForAnswer = false;
+          // Randomly pick who starts
+          const starterIndex = Math.floor(Math.random() * 2);
+          room.currentTurn = room.players[starterIndex].id;
           io.to(roomId).emit('gameStart', room.players, room.currentTurn);
         }
       }
@@ -88,20 +91,18 @@ function initializeGameServer(app, io) {
     socket.on('askQuestion', (roomId, question) => {
       const room = rooms[roomId];
       if (!room || room.gameState !== 'playing' || room.currentTurn !== socket.id) return;
+      if (room.waitingForAnswer) return; // already asked, must wait for answer
 
+      room.waitingForAnswer = true;
       room.questions.push({
         player: socket.id,
         question: question,
         timestamp: Date.now()
       });
 
-      // Send question to the other player
+      // Send question to the other player — don't switch turn yet
       const otherPlayer = room.players.find(p => p.id !== socket.id);
       socket.to(otherPlayer.id).emit('questionAsked', question, socket.id);
-
-      // Switch turn
-      room.currentTurn = otherPlayer.id;
-      io.to(roomId).emit('turnChanged', room.currentTurn);
     });
 
     socket.on('answerQuestion', (roomId, answer) => {
@@ -111,6 +112,11 @@ function initializeGameServer(app, io) {
       // Send answer back to the asker
       const asker = room.players.find(p => p.id !== socket.id);
       io.to(asker.id).emit('questionAnswered', answer);
+
+      // Now switch turn: the answerer becomes the next asker
+      room.waitingForAnswer = false;
+      room.currentTurn = socket.id;
+      io.to(roomId).emit('turnChanged', room.currentTurn);
     });
 
     socket.on('makeGuess', (roomId, guess) => {
