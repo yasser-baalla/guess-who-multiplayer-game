@@ -1451,6 +1451,15 @@
       showMessage('<i class="fas fa-redo"></i> New round! Choose your player.', 'info');
     });
 
+    socket.on('samePlayerError', () => {
+      showMessage('<i class="fas fa-exclamation-triangle"></i> Your opponent already chose that player! Pick a different one.', 'error');
+      // Re-enable whichever ready button is visible
+      const cb = document.getElementById('creatorReadyBtn');
+      const rb = document.getElementById('readyBtn');
+      if (cb) { cb.disabled = false; cb.style.opacity = '1'; }
+      if (rb) { rb.disabled = false; rb.style.opacity = '1'; }
+    });
+
     socket.on('playerDisconnected', () => {
       showMessage('The other player disconnected. Game ended.', 'error');
       setTimeout(() => location.reload(), 3000);

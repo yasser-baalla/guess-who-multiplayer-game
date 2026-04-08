@@ -75,6 +75,14 @@ function initializeGameServer(app, io) {
 
       const player = room.players.find(p => p.id === socket.id);
       if (player) {
+        // Reject if the opponent already picked the same player
+        const opponent = room.players.find(p => p.id !== socket.id);
+        if (opponent && opponent.secretPerson &&
+            opponent.secretPerson.toLowerCase() === secretPerson.toLowerCase()) {
+          socket.emit('samePlayerError');
+          return;
+        }
+
         player.secretPerson = secretPerson;
         player.ready = true;
 
