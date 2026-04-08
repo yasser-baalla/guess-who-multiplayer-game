@@ -1422,10 +1422,29 @@
       return Math.random().toString(36).substring(2, 8).toUpperCase();
     }
 
-    function initializePlayerList() {
-      const playerList = document.getElementById('playerList');
-      playerList.innerHTML = soccerPlayers.map((player, index) => `
-        <div class="player-item" onclick="selectPlayer(${index})">
+    // Render at most MAX_RESULTS matching players into a list container.
+    // Nothing is rendered until the user types — avoids dumping 17k DOM nodes at once.
+    const MAX_RESULTS = 80;
+
+    function renderList(listEl, term, onSelect) {
+      if (!term) {
+        listEl.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,0.35);font-size:0.9rem;"><i class="fas fa-search" style="margin-right:8px;"></i>Type to search players...</div>';
+        return;
+      }
+      const lower = term.toLowerCase();
+      const matches = [];
+      for (let i = 0; i < soccerPlayers.length && matches.length < MAX_RESULTS; i++) {
+        const p = soccerPlayers[i];
+        if (p.name.toLowerCase().includes(lower) || p.country.toLowerCase().includes(lower)) {
+          matches.push({ player: p, index: i });
+        }
+      }
+      if (!matches.length) {
+        listEl.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,0.35);font-size:0.9rem;">No players found</div>';
+        return;
+      }
+      listEl.innerHTML = matches.map(({ player, index }) => `
+        <div class="player-item" onclick="${onSelect}(${index})">
           <div class="player-flag">${player.flag}</div>
           <div class="player-info">
             <div class="player-name">${player.name}</div>
@@ -1435,70 +1454,46 @@
       `).join('');
     }
 
+    function initializePlayerList() {
+      renderList(document.getElementById('playerList'), '', 'selectPlayer');
+    }
+
     function initializeCreatorPlayerList() {
-      const playerList = document.getElementById('creatorPlayerList');
-      playerList.innerHTML = soccerPlayers.map((player, index) => `
-        <div class="player-item" onclick="selectCreatorPlayer(${index})">
-          <div class="player-flag">${player.flag}</div>
-          <div class="player-info">
-            <div class="player-name">${player.name}</div>
-            <div class="player-country">${player.country}</div>
-          </div>
-        </div>
-      `).join('');
+      renderList(document.getElementById('creatorPlayerList'), '', 'selectCreatorPlayer');
+    }
+
+    function filterPlayers() {
+      const term = document.getElementById('playerSearch').value;
+      renderList(document.getElementById('playerList'), term, 'selectPlayer');
+    }
+
+    function filterCreatorPlayers() {
+      const term = document.getElementById('creatorPlayerSearch').value;
+      renderList(document.getElementById('creatorPlayerList'), term, 'selectCreatorPlayer');
     }
 
     function selectPlayer(index) {
       selectedPlayer = soccerPlayers[index];
-      
-      // Update UI
-      document.querySelectorAll('#playerList .player-item').forEach((item, i) => {
-        item.classList.toggle('selected', i === index);
-      });
-
       const display = document.getElementById('selectedPlayer');
       document.getElementById('selectedPlayerFlag').textContent = selectedPlayer.flag;
       document.getElementById('selectedPlayerName').textContent = selectedPlayer.name;
       document.getElementById('selectedPlayerCountry').textContent = selectedPlayer.country;
       display.classList.add('active');
+      // Highlight selected item in current rendered list
+      document.querySelectorAll('#playerList .player-item').forEach(item => {
+        item.classList.toggle('selected', item.querySelector('.player-name').textContent === selectedPlayer.name);
+      });
     }
 
     function selectCreatorPlayer(index) {
       creatorSelectedPlayer = soccerPlayers[index];
-      
-      // Update UI
-      document.querySelectorAll('#creatorPlayerList .player-item').forEach((item, i) => {
-        item.classList.toggle('selected', i === index);
-      });
-
       const display = document.getElementById('creatorSelectedPlayer');
       document.getElementById('creatorPlayerFlag').textContent = creatorSelectedPlayer.flag;
       document.getElementById('creatorPlayerName').textContent = creatorSelectedPlayer.name;
       document.getElementById('creatorPlayerCountry').textContent = creatorSelectedPlayer.country;
       display.classList.add('active');
-    }
-
-    function filterPlayers() {
-      const searchTerm = document.getElementById('playerSearch').value.toLowerCase();
-      const playerItems = document.querySelectorAll('#playerList .player-item');
-
-      playerItems.forEach((item, index) => {
-        const player = soccerPlayers[index];
-        const matches = player.name.toLowerCase().includes(searchTerm) || 
-                       player.country.toLowerCase().includes(searchTerm);
-        item.style.display = matches ? 'flex' : 'none';
-      });
-    }
-
-    function filterCreatorPlayers() {
-      const searchTerm = document.getElementById('creatorPlayerSearch').value.toLowerCase();
-      const playerItems = document.querySelectorAll('#creatorPlayerList .player-item');
-
-      playerItems.forEach((item, index) => {
-        const player = soccerPlayers[index];
-        const matches = player.name.toLowerCase().includes(searchTerm) || 
-                       player.country.toLowerCase().includes(searchTerm);
-        item.style.display = matches ? 'flex' : 'none';
+      document.querySelectorAll('#creatorPlayerList .player-item').forEach(item => {
+        item.classList.toggle('selected', item.querySelector('.player-name').textContent === creatorSelectedPlayer.name);
       });
     }
 
@@ -1592,39 +1587,23 @@
     }
 
     function initializeGuessList() {
-      const list = document.getElementById('guessList');
-      list.innerHTML = soccerPlayers.map((player, index) => `
-        <div class="player-item" onclick="selectGuessPlayer(${index})">
-          <div class="player-flag">${player.flag}</div>
-          <div class="player-info">
-            <div class="player-name">${player.name}</div>
-            <div class="player-country">${player.country}</div>
-          </div>
-        </div>
-      `).join('');
+      renderList(document.getElementById('guessList'), '', 'selectGuessPlayer');
     }
 
     function filterGuessList() {
-      const term = document.getElementById('guessSearch').value.toLowerCase();
-      document.querySelectorAll('#guessList .player-item').forEach((item, index) => {
-        const p = soccerPlayers[index];
-        const match = p.name.toLowerCase().includes(term) || p.country.toLowerCase().includes(term);
-        item.style.display = match ? 'flex' : 'none';
-      });
+      const term = document.getElementById('guessSearch').value;
+      renderList(document.getElementById('guessList'), term, 'selectGuessPlayer');
     }
 
     function selectGuessPlayer(index) {
       guessedPlayer = soccerPlayers[index];
-
-      document.querySelectorAll('#guessList .player-item').forEach((item, i) => {
-        item.classList.toggle('selected', i === index);
-      });
-
       document.getElementById('guessSelectedFlag').textContent = guessedPlayer.flag;
       document.getElementById('guessSelectedName').textContent = guessedPlayer.name;
       document.getElementById('guessSelectedCountry').textContent = guessedPlayer.country;
       document.getElementById('guessSelectedDisplay').classList.add('active');
-
+      document.querySelectorAll('#guessList .player-item').forEach(item => {
+        item.classList.toggle('selected', item.querySelector('.player-name').textContent === guessedPlayer.name);
+      });
       const btn = document.getElementById('makeGuessBtn');
       btn.disabled = false;
       btn.style.opacity = '1';
@@ -1642,8 +1621,7 @@
       guessedPlayer = null;
       document.getElementById('guessSelectedDisplay').classList.remove('active');
       document.getElementById('guessSearch').value = '';
-      filterGuessList();
-      document.querySelectorAll('#guessList .player-item').forEach(item => item.classList.remove('selected'));
+      renderList(document.getElementById('guessList'), '', 'selectGuessPlayer');
       const btn = document.getElementById('makeGuessBtn');
       btn.disabled = true;
       btn.style.opacity = '0.5';
