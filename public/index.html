@@ -1460,9 +1460,10 @@
       return Math.random().toString(36).substring(2, 8).toUpperCase();
     }
 
-    // Render at most MAX_RESULTS matching players into a list container.
-    // Nothing is rendered until the user types — avoids dumping 17k DOM nodes at once.
-    const MAX_RESULTS = 80;
+    // Render matching players into a list, capped at MAX_RESULTS for performance.
+    // Results are sorted: name-starts-with first, then contains — so typing more
+    // letters always surfaces the exact player you want.
+    const MAX_RESULTS = 100;
 
     function renderList(listEl, term, onSelect) {
       if (!term) {
@@ -1470,18 +1471,34 @@
         return;
       }
       const lower = term.toLowerCase();
-      const matches = [];
-      for (let i = 0; i < soccerPlayers.length && matches.length < MAX_RESULTS; i++) {
+      const starts = [];   // name starts with term  → shown first
+      const contains = []; // name/country contains term → shown after
+
+      for (let i = 0; i < soccerPlayers.length; i++) {
         const p = soccerPlayers[i];
-        if (p.name.toLowerCase().includes(lower) || p.country.toLowerCase().includes(lower)) {
-          matches.push({ player: p, index: i });
+        const name = p.name.toLowerCase();
+        const country = p.country.toLowerCase();
+        if (name.startsWith(lower)) {
+          starts.push({ player: p, index: i });
+        } else if (name.includes(lower) || country.includes(lower)) {
+          contains.push({ player: p, index: i });
         }
       }
-      if (!matches.length) {
+
+      const all = [...starts, ...contains];
+
+      if (!all.length) {
         listEl.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,0.35);font-size:0.9rem;">No players found</div>';
         return;
       }
-      listEl.innerHTML = matches.map(({ player, index }) => `
+
+      const shown = all.slice(0, MAX_RESULTS);
+      const remaining = all.length - shown.length;
+      const hint = remaining > 0
+        ? `<div style="padding:10px 16px;text-align:center;color:rgba(255,255,255,0.3);font-size:0.8rem;">${remaining} more — type more letters to narrow down</div>`
+        : '';
+
+      listEl.innerHTML = shown.map(({ player, index }) => `
         <div class="player-item" onclick="${onSelect}(${index})">
           <div class="player-flag">${player.flag}</div>
           <div class="player-info">
@@ -1489,7 +1506,7 @@
             <div class="player-country">${player.country}</div>
           </div>
         </div>
-      `).join('');
+      `).join('') + hint;
     }
 
     function initializePlayerList() {
