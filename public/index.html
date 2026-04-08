@@ -609,12 +609,29 @@
     /* ============================================================
        PLAYER SEARCH & LIST
     ============================================================ */
-    .player-search {
+    /* Search + list sit inside a flex column so we can reverse them on mobile */
+    .search-list-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
       margin-bottom: 18px;
+    }
+
+    .player-search {
+      margin-bottom: 0;
     }
 
     .player-search input {
       width: 100%;
+      border-radius: 0 0 10px 10px;
+      border-top: none;
+    }
+
+    /* When not reversed, give the list its bottom border radius */
+    .search-list-wrap .player-list {
+      border-radius: 10px 10px 0 0;
+      margin-bottom: 0;
+      border-bottom: none;
     }
 
     .player-list {
@@ -967,12 +984,29 @@
         padding: 16px;
       }
 
+      /* Flip search below list so results appear above the keyboard */
+      .search-list-wrap {
+        flex-direction: column-reverse;
+      }
+
+      .search-list-wrap .player-list {
+        border-radius: 0 0 10px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: none;
+      }
+
+      .search-list-wrap .player-search input {
+        border-radius: 10px 10px 0 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: none;
+      }
+
       .player-list {
-        max-height: 220px;
+        max-height: 38dvh;
       }
 
       .guess-list {
-        max-height: 180px;
+        max-height: 32dvh;
       }
 
       .my-player-name {
@@ -1086,11 +1120,12 @@
           <h3><i class="fas fa-futbol"></i> Choose Your Mystery Soccer Player</h3>
           <p>Select a famous soccer player from the list below. Keep your choice secret!</p>
 
-          <div class="player-search">
-            <input type="text" id="creatorPlayerSearch" class="form-input" placeholder="Search player name or country..." onkeyup="filterCreatorPlayers()">
+          <div class="search-list-wrap">
+            <div id="creatorPlayerList" class="player-list"></div>
+            <div class="player-search">
+              <input type="text" id="creatorPlayerSearch" class="form-input" placeholder="Search player name or country..." oninput="filterCreatorPlayers()" onfocus="this.scrollIntoView({behavior:'smooth',block:'center'})">
+            </div>
           </div>
-
-          <div id="creatorPlayerList" class="player-list"></div>
 
           <div id="creatorSelectedPlayer" class="selected-player-display">
             <div class="player-flag" id="creatorPlayerFlag"></div>
@@ -1117,11 +1152,12 @@
         <h2><i class="fas fa-futbol"></i> Choose Your Mystery Soccer Player</h2>
         <p>Select a famous soccer player from the list below. Keep your choice secret!</p>
 
-        <div class="player-search">
-          <input type="text" id="playerSearch" class="form-input" placeholder="Search player name or country..." onkeyup="filterPlayers()">
+        <div class="search-list-wrap">
+          <div id="playerList" class="player-list"></div>
+          <div class="player-search">
+            <input type="text" id="playerSearch" class="form-input" placeholder="Search player name or country..." oninput="filterPlayers()" onfocus="this.scrollIntoView({behavior:'smooth',block:'center'})">
+          </div>
         </div>
-
-        <div id="playerList" class="player-list"></div>
 
         <div id="selectedPlayer" class="selected-player-display">
           <div class="player-flag" id="selectedPlayerFlag"></div>
@@ -1184,10 +1220,12 @@
 
             <div id="guessSection" class="action-card" style="display: none;">
               <h4><i class="fas fa-bullseye"></i> Make a Guess</h4>
-              <div class="player-search">
-                <input type="text" id="guessSearch" class="form-input" placeholder="Search player or country..." oninput="filterGuessList()">
+              <div class="search-list-wrap">
+                <div id="guessList" class="player-list guess-list"></div>
+                <div class="player-search">
+                  <input type="text" id="guessSearch" class="form-input" placeholder="Search player or country..." oninput="filterGuessList()" onfocus="this.scrollIntoView({behavior:'smooth',block:'center'})">
+                </div>
               </div>
-              <div id="guessList" class="player-list guess-list"></div>
               <div id="guessSelectedDisplay" class="selected-player-display">
                 <div class="player-flag" id="guessSelectedFlag"></div>
                 <div class="player-info">
