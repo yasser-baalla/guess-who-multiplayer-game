@@ -6,6 +6,7 @@
   <title>Guess Who - Multiplayer Edition</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css" rel="stylesheet">
   <style>
     /* ============================================================
        RESET & BASE
@@ -694,6 +695,25 @@
       font-size: 1.8rem;
       min-width: 38px;
       text-align: center;
+      line-height: 1;
+    }
+
+    /* flag-icons sizing inside player items */
+    .player-flag .fi {
+      width: 1.6em;
+      height: 1.2em;
+      border-radius: 3px;
+      display: inline-block;
+      vertical-align: middle;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+
+    .selected-player-display .fi,
+    .my-player-flag .fi {
+      width: 2.2em;
+      height: 1.65em;
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
 
     .player-info {
@@ -1351,7 +1371,7 @@
       // Display the selected player at the top
       const player = selectedPlayer || creatorSelectedPlayer;
       if (player) {
-        document.getElementById('topPlayerFlag').textContent = player.flag;
+        document.getElementById('topPlayerFlag').innerHTML = flagHtml(player.flag);
         document.getElementById('topPlayerName').textContent = player.name;
         document.getElementById('topPlayerCountry').textContent = player.country;
         document.getElementById('selectedPlayerTop').style.display = 'block';
@@ -1469,6 +1489,17 @@
       return Math.random().toString(36).substring(2, 8).toUpperCase();
     }
 
+    // Convert flag emoji → flag-icons CSS class (works on Windows/desktop)
+    // Falls back to the raw emoji for regional flags (Wales, etc.)
+    function flagHtml(emojiFlag) {
+      const pts = [...emojiFlag].map(c => c.codePointAt(0));
+      if (pts.length === 2 && pts[0] >= 0x1F1E6 && pts[0] <= 0x1F1FF) {
+        const code = pts.map(cp => String.fromCharCode(cp - 0x1F1E6 + 65)).join('').toLowerCase();
+        return `<span class="fi fi-${code}"></span>`;
+      }
+      return emojiFlag; // regional/special flag — keep emoji
+    }
+
     // Render matching players into a list, capped at MAX_RESULTS for performance.
     // Results are sorted: name-starts-with first, then contains — so typing more
     // letters always surfaces the exact player you want.
@@ -1511,7 +1542,7 @@
 
       listEl.innerHTML = shown.map(({ player, index }) => `
         <div class="player-item" onclick="${onSelect}(${index})">
-          <div class="player-flag">${player.flag}</div>
+          <div class="player-flag">${flagHtml(player.flag)}</div>
           <div class="player-info">
             <div class="player-name">${player.name}</div>
             <div class="player-country">${player.country}</div>
@@ -1541,7 +1572,7 @@
     function selectPlayer(index) {
       selectedPlayer = soccerPlayers[index];
       const display = document.getElementById('selectedPlayer');
-      document.getElementById('selectedPlayerFlag').textContent = selectedPlayer.flag;
+      document.getElementById('selectedPlayerFlag').innerHTML = flagHtml(selectedPlayer.flag);
       document.getElementById('selectedPlayerName').textContent = selectedPlayer.name;
       document.getElementById('selectedPlayerCountry').textContent = selectedPlayer.country;
       display.classList.add('active');
@@ -1554,7 +1585,7 @@
     function selectCreatorPlayer(index) {
       creatorSelectedPlayer = soccerPlayers[index];
       const display = document.getElementById('creatorSelectedPlayer');
-      document.getElementById('creatorPlayerFlag').textContent = creatorSelectedPlayer.flag;
+      document.getElementById('creatorPlayerFlag').innerHTML = flagHtml(creatorSelectedPlayer.flag);
       document.getElementById('creatorPlayerName').textContent = creatorSelectedPlayer.name;
       document.getElementById('creatorPlayerCountry').textContent = creatorSelectedPlayer.country;
       display.classList.add('active');
@@ -1663,7 +1694,7 @@
 
     function selectGuessPlayer(index) {
       guessedPlayer = soccerPlayers[index];
-      document.getElementById('guessSelectedFlag').textContent = guessedPlayer.flag;
+      document.getElementById('guessSelectedFlag').innerHTML = flagHtml(guessedPlayer.flag);
       document.getElementById('guessSelectedName').textContent = guessedPlayer.name;
       document.getElementById('guessSelectedCountry').textContent = guessedPlayer.country;
       document.getElementById('guessSelectedDisplay').classList.add('active');
