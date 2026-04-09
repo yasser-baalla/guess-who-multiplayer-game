@@ -28,6 +28,7 @@ if (require.main === module) {
 function initializeGameServer(app, io) {
   // Store rooms and players
   const rooms = {};
+  const pendingDisconnects = {}; // socketId -> {timer, roomId}
 
   io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
@@ -161,7 +162,13 @@ function initializeGameServer(app, io) {
       });
 
       const otherPlayer = room.players.find(p => p.id !== socket.id);
-      const correct = guess.toLowerCase() === otherPlayer.secretPerson.toLowerCase();
+      const correct = otherPlayer && otherPlayer.secretPerson &&
+        guess.toLowerCase() === otherPlayer.secretPerson.toLowerCase();
+      const guesserPlayer = room.players.find(p => p.id === socket.id);
+      const guesserName = guesserPlayer ? guesserPlayer.name : 'Player';
+
+      // Broadcast guess to both players so it appears in both history panels
+      io.to(roomId).emit('guessMade', guesserName, guess, correct, socket.id);
 
       if (correct) {
         room.gameState = 'finished';
@@ -169,8 +176,6 @@ function initializeGameServer(app, io) {
         io.to(roomId).emit('gameOver', socket.id, guess, room.scores);
       } else {
         socket.emit('wrongGuess', guess);
-        // Continue game, turn stays with current player? Or switch?
-        // In standard 20 questions, wrong guess might end turn or something, but let's switch turn
         room.currentTurn = otherPlayer.id;
         io.to(roomId).emit('turnChanged', room.currentTurn);
       }
@@ -196,20 +201,72 @@ function initializeGameServer(app, io) {
       io.to(roomId).emit('gameRestart', creatorId, room.scores);
     });
 
+    socket.on('rejoinRoom', (roomId, playerName) => {
+      const room = rooms[roomId];
+      if (!room) { socket.emit('rejoinFailed'); return; }
+
+      const playerEntry = room.players.find(p => p.name === playerName);
+      if (!playerEntry) { socket.emit('rejoinFailed'); return; }
+
+      const oldSocketId = playerEntry.id;
+
+      // Cancel grace-period timer if it's still running
+      if (pendingDisconnects[oldSocketId]) {
+        clearTimeout(pendingDisconnects[oldSocketId].timer);
+        delete pendingDisconnects[oldSocketId];
+      }
+
+      // Transfer scores and current turn to the new socket ID
+      if (room.scores[oldSocketId] !== undefined) {
+        room.scores[socket.id] = room.scores[oldSocketId];
+        delete room.scores[oldSocketId];
+      }
+      if (room.currentTurn === oldSocketId) room.currentTurn = socket.id;
+      playerEntry.id = socket.id;
+
+      socket.join(roomId);
+
+      socket.emit('rejoinSuccess', {
+        roomId,
+        gameState: room.gameState,
+        currentTurn: room.currentTurn,
+        waitingForAnswer: room.waitingForAnswer || false,
+        players: room.players.map(p => ({ id: p.id, name: p.name })),
+        scores: room.scores,
+        mySecretPerson: playerEntry.secretPerson
+      });
+
+      io.to(roomId).emit('playerRejoined', playerName);
+    });
+
     socket.on('disconnect', () => {
       console.log('User disconnected:', socket.id);
+      const disconnectedId = socket.id;
 
-      // Remove player from rooms
       for (const roomId in rooms) {
         const room = rooms[roomId];
-        room.players = room.players.filter(p => p.id !== socket.id);
+        const playerIndex = room.players.findIndex(p => p.id === disconnectedId);
+        if (playerIndex === -1) continue;
 
-        if (room.players.length === 0) {
-          delete rooms[roomId];
-        } else {
-          io.to(roomId).emit('playerDisconnected');
-          room.gameState = 'waiting';
-        }
+        const playerName = room.players[playerIndex].name;
+        // Notify opponent but give 30 s grace period for reconnection
+        io.to(roomId).emit('playerTemporarilyDisconnected', playerName);
+
+        const timer = setTimeout(() => {
+          delete pendingDisconnects[disconnectedId];
+          const idx = room.players.findIndex(p => p.id === disconnectedId);
+          if (idx !== -1) {
+            room.players.splice(idx, 1);
+            if (room.players.length === 0) {
+              delete rooms[roomId];
+            } else {
+              io.to(roomId).emit('playerDisconnected');
+              room.gameState = 'waiting';
+            }
+          }
+        }, 30000);
+
+        pendingDisconnects[disconnectedId] = { timer, roomId };
       }
     });
   });

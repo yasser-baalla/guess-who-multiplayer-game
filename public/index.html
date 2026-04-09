@@ -508,6 +508,19 @@
       opacity: 0.75;
     }
 
+    .question-item.guess-correct {
+      border-left-color: #00e676;
+      background: rgba(0, 230, 118, 0.1);
+      color: rgba(255, 255, 255, 0.95);
+      font-weight: 600;
+    }
+
+    .question-item.guess-wrong {
+      border-left-color: #ff5252;
+      background: rgba(255, 82, 82, 0.08);
+      color: rgba(255, 180, 180, 0.95);
+    }
+
     /* ============================================================
        TOAST MESSAGES
     ============================================================ */
@@ -1317,6 +1330,26 @@
       .catch(err => console.error('Failed to load players.json:', err));
 
     const socket = io();
+
+    function saveSession(roomId, playerName) {
+      sessionStorage.setItem('gwRoom', roomId);
+      sessionStorage.setItem('gwName', playerName);
+    }
+    function clearSession() {
+      sessionStorage.removeItem('gwRoom');
+      sessionStorage.removeItem('gwName');
+      sessionStorage.removeItem('gwSecretPlayer');
+    }
+
+    // On every socket connect (first load AND reconnects after drop)
+    socket.on('connect', () => {
+      const savedRoom = sessionStorage.getItem('gwRoom');
+      const savedName = sessionStorage.getItem('gwName');
+      if (savedRoom && savedName) {
+        socket.emit('rejoinRoom', savedRoom, savedName);
+      }
+    });
+
     let currentRoom = null;
     let currentPlayer = null;
     let currentTurn = null;
@@ -1413,9 +1446,16 @@
       showMessage('<i class="fas fa-ban"></i> Question rejected — it was already asked! Try a different one.', 'error');
     });
 
+    socket.on('guessMade', (guesserName, guess, correct, guesserId) => {
+      const isMe = guesserId === socket.id;
+      const who = isMe ? 'You' : guesserName;
+      const type = correct ? 'guess-correct' : 'guess-wrong';
+      const result = correct ? '✓ Correct!' : '✗ Wrong';
+      addToHistory(`<strong>${who}</strong> guessed: ${guess} — ${result}`, type);
+    });
+
     socket.on('wrongGuess', (guess) => {
-      showMessage(`Wrong guess: ${guess}`, 'error');
-      addToHistory(`You guessed: ${guess} (wrong)`, 'you');
+      showMessage(`<i class="fas fa-times-circle"></i> Wrong guess: ${guess}. Keep trying!`, 'error');
     });
 
     socket.on('gameOver', (winnerId, correctGuess, scores) => {
@@ -1426,7 +1466,6 @@
         : `<i class="fas fa-heart-broken"></i> Game over! Your opponent guessed correctly: <strong>${correctGuess}</strong>.`;
       document.getElementById('gameOverMessage').innerHTML = message;
       document.getElementById('gameOverMessage').className = `winner-message ${isWinner ? 'winner' : 'loser'}`;
-      addToHistory(message, 'system');
 
       // Update scoreboard
       if (scores) updateScoreboard(scores, winnerId);
@@ -1480,9 +1519,69 @@
       if (rb) { rb.disabled = false; rb.style.opacity = '1'; }
     });
 
+    socket.on('playerTemporarilyDisconnected', (playerName) => {
+      showMessage(`<i class="fas fa-wifi"></i> ${playerName} disconnected — waiting 30s for reconnection...`, 'error');
+    });
+
+    socket.on('playerRejoined', (playerName) => {
+      showMessage(`<i class="fas fa-wifi"></i> ${playerName} reconnected!`, 'success');
+    });
+
     socket.on('playerDisconnected', () => {
+      clearSession();
       showMessage('The other player disconnected. Game ended.', 'error');
       setTimeout(() => location.reload(), 3000);
+    });
+
+    socket.on('rejoinSuccess', (data) => {
+      currentRoom = data.roomId;
+      currentTurn = data.currentTurn;
+      waitingForAnswer = data.waitingForAnswer;
+
+      const myId = socket.id;
+      const me = data.players.find(p => p.id === myId);
+      const opp = data.players.find(p => p.id !== myId);
+      currentPlayer = me ? { name: me.name } : currentPlayer;
+
+      // Restore scoreboard
+      document.getElementById('myScoreName').textContent = me ? me.name : 'You';
+      document.getElementById('oppScoreName').textContent = opp ? opp.name : 'Opponent';
+      document.getElementById('myScoreValue').textContent = data.scores[myId] || 0;
+      const oppId = opp ? opp.id : Object.keys(data.scores).find(id => id !== myId);
+      if (oppId) document.getElementById('oppScoreValue').textContent = data.scores[oppId] || 0;
+      document.getElementById('scoreboard').style.display = 'flex';
+
+      if (data.gameState === 'playing') {
+        showScreen('gameScreen');
+        guessedPlayer = null;
+        initializeGuessList();
+
+        // Restore secret player banner from sessionStorage (avoids async fetch timing)
+        const saved = JSON.parse(sessionStorage.getItem('gwSecretPlayer') || 'null');
+        if (saved) {
+          document.getElementById('topPlayerFlag').innerHTML = flagHtml(saved.flag || '');
+          document.getElementById('topPlayerName').textContent = saved.name;
+          document.getElementById('topPlayerCountry').textContent = saved.country || '';
+          document.getElementById('selectedPlayerTop').style.display = 'block';
+          selectedPlayer = saved;
+        }
+
+        updateTurnIndicator();
+        addToHistory('<i class="fas fa-sync-alt"></i> Reconnected to game.', 'opponent');
+        showMessage('<i class="fas fa-wifi"></i> Reconnected!', 'success');
+      } else if (data.gameState === 'setup') {
+        showScreen('setupScreen');
+        showMessage('<i class="fas fa-wifi"></i> Reconnected! Choose your player.', 'success');
+      } else {
+        // Room waiting or finished — start fresh
+        clearSession();
+        showScreen('welcomeScreen');
+      }
+    });
+
+    socket.on('rejoinFailed', () => {
+      clearSession();
+      // Stay on welcome screen (default active screen on load)
     });
 
     function generateRoomCode() {
@@ -1606,6 +1705,7 @@
       socket.emit('joinRoom', roomId, playerName);
       currentRoom = roomId;
       currentPlayer = { name: playerName };
+      saveSession(roomId, playerName);
 
       document.getElementById('roomCodeDisplay').textContent = roomId;
       showScreen('roomCreatedScreen');
@@ -1623,6 +1723,7 @@
       socket.emit('joinRoom', roomId, playerName);
       currentRoom = roomId;
       currentPlayer = { name: playerName };
+      saveSession(roomId, playerName);
     }
 
     function setCreatorSecretPerson() {
@@ -1632,6 +1733,7 @@
       }
 
       socket.emit('setSecretPerson', currentRoom, creatorSelectedPlayer.name);
+      sessionStorage.setItem('gwSecretPlayer', JSON.stringify(creatorSelectedPlayer));
       document.getElementById('creatorPlayerSearch').disabled = true;
       document.querySelectorAll('#creatorPlayerList .player-item').forEach(item => {
         item.style.pointerEvents = 'none';
@@ -1649,6 +1751,7 @@
       }
 
       socket.emit('setSecretPerson', currentRoom, selectedPlayer.name);
+      sessionStorage.setItem('gwSecretPlayer', JSON.stringify(selectedPlayer));
       document.getElementById('setupScreen').style.display = 'none';
       document.getElementById('waitingMessage').style.display = 'block';
       showMessage('Player chosen! Waiting for the other player to choose their player.', 'success');
@@ -1689,7 +1792,16 @@
 
     function filterGuessList() {
       const term = document.getElementById('guessSearch').value;
+      // Typing a new term clears any prior list-selection
+      if (guessedPlayer) {
+        guessedPlayer = null;
+        document.getElementById('guessSelectedDisplay').classList.remove('active');
+      }
       renderList(document.getElementById('guessList'), term, 'selectGuessPlayer');
+      const btn = document.getElementById('makeGuessBtn');
+      const hasInput = term.trim().length > 0;
+      btn.disabled = !hasInput;
+      btn.style.opacity = hasInput ? '1' : '0.5';
     }
 
     function selectGuessPlayer(index) {
@@ -1707,17 +1819,20 @@
     }
 
     function makeGuess() {
-      if (!guessedPlayer) {
-        showMessage('Please select a player to guess.', 'error');
+      const searchInput = document.getElementById('guessSearch');
+      const guessName = guessedPlayer ? guessedPlayer.name : searchInput.value.trim();
+
+      if (!guessName) {
+        showMessage('Please select or type a player name to guess.', 'error');
         return;
       }
 
-      socket.emit('makeGuess', currentRoom, guessedPlayer.name);
+      socket.emit('makeGuess', currentRoom, guessName);
 
       // Reset guess selection for next turn
       guessedPlayer = null;
       document.getElementById('guessSelectedDisplay').classList.remove('active');
-      document.getElementById('guessSearch').value = '';
+      searchInput.value = '';
       renderList(document.getElementById('guessList'), '', 'selectGuessPlayer');
       const btn = document.getElementById('makeGuessBtn');
       btn.disabled = true;
@@ -1752,7 +1867,15 @@
       const history = document.getElementById('history');
       const div = document.createElement('div');
       div.className = `question-item ${type}`;
-      div.innerHTML = `<i class="fas fa-${type === 'you' ? 'user' : 'user-friends'}"></i> ${message}`;
+      const iconMap = {
+        'you': 'user',
+        'opponent': 'user-friends',
+        'rejected': 'ban',
+        'guess-correct': 'check-circle',
+        'guess-wrong': 'times-circle'
+      };
+      const icon = iconMap[type] || 'comment';
+      div.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
       history.appendChild(div);
       history.scrollTop = history.scrollHeight;
     }
