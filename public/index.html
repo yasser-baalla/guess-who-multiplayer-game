@@ -1660,12 +1660,34 @@
 
     function filterPlayers() {
       const term = document.getElementById('playerSearch').value;
+      const trimmed = term.trim();
+      selectedPlayer = null; // typing always clears prior selection
       renderList(document.getElementById('playerList'), term, 'selectPlayer');
+      const display = document.getElementById('selectedPlayer');
+      if (trimmed.length > 0) {
+        document.getElementById('selectedPlayerFlag').innerHTML = '';
+        document.getElementById('selectedPlayerName').textContent = trimmed;
+        document.getElementById('selectedPlayerCountry').textContent = 'Custom player (not in database)';
+        display.classList.add('active');
+      } else {
+        display.classList.remove('active');
+      }
     }
 
     function filterCreatorPlayers() {
       const term = document.getElementById('creatorPlayerSearch').value;
+      const trimmed = term.trim();
+      creatorSelectedPlayer = null; // typing always clears prior selection
       renderList(document.getElementById('creatorPlayerList'), term, 'selectCreatorPlayer');
+      const display = document.getElementById('creatorSelectedPlayer');
+      if (trimmed.length > 0) {
+        document.getElementById('creatorPlayerFlag').innerHTML = '';
+        document.getElementById('creatorPlayerName').textContent = trimmed;
+        document.getElementById('creatorPlayerCountry').textContent = 'Custom player (not in database)';
+        display.classList.add('active');
+      } else {
+        display.classList.remove('active');
+      }
     }
 
     function selectPlayer(index) {
@@ -1727,9 +1749,13 @@
     }
 
     function setCreatorSecretPerson() {
-      if (!creatorSelectedPlayer) {
-        showMessage('Please select a soccer player.', 'error');
+      const typedName = document.getElementById('creatorPlayerSearch').value.trim();
+      if (!creatorSelectedPlayer && !typedName) {
+        showMessage('Please select or type a soccer player name.', 'error');
         return;
+      }
+      if (!creatorSelectedPlayer) {
+        creatorSelectedPlayer = { name: typedName, country: '', flag: '⚽' };
       }
 
       socket.emit('setSecretPerson', currentRoom, creatorSelectedPlayer.name);
@@ -1745,9 +1771,13 @@
     }
 
     function setSecretPerson() {
-      if (!selectedPlayer) {
-        showMessage('Please select a soccer player.', 'error');
+      const typedName = document.getElementById('playerSearch').value.trim();
+      if (!selectedPlayer && !typedName) {
+        showMessage('Please select or type a soccer player name.', 'error');
         return;
+      }
+      if (!selectedPlayer) {
+        selectedPlayer = { name: typedName, country: '', flag: '⚽' };
       }
 
       socket.emit('setSecretPerson', currentRoom, selectedPlayer.name);
