@@ -1788,24 +1788,43 @@
 
     function initializeGuessList() {
       renderList(document.getElementById('guessList'), '', 'selectGuessPlayer');
+      document.getElementById('guessSearch').value = '';
+      document.getElementById('guessSelectedDisplay').classList.remove('active');
+      const btn = document.getElementById('makeGuessBtn');
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
     }
 
     function filterGuessList() {
       const term = document.getElementById('guessSearch').value;
-      // Typing a new term clears any prior list-selection
-      if (guessedPlayer) {
-        guessedPlayer = null;
-        document.getElementById('guessSelectedDisplay').classList.remove('active');
-      }
+      const trimmed = term.trim();
+
+      // Typing always clears any prior list-selection
+      guessedPlayer = null;
+
       renderList(document.getElementById('guessList'), term, 'selectGuessPlayer');
+
       const btn = document.getElementById('makeGuessBtn');
-      const hasInput = term.trim().length > 0;
-      btn.disabled = !hasInput;
-      btn.style.opacity = hasInput ? '1' : '0.5';
+      const display = document.getElementById('guessSelectedDisplay');
+      if (trimmed.length > 0) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        // Show live preview of what will be guessed (overridden if user picks from list)
+        document.getElementById('guessSelectedName').textContent = trimmed;
+        document.getElementById('guessSelectedCountry').textContent = 'Custom / not in database';
+        document.getElementById('guessSelectedFlag').innerHTML = '';
+        display.classList.add('active');
+      } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        display.classList.remove('active');
+      }
     }
 
     function selectGuessPlayer(index) {
       guessedPlayer = soccerPlayers[index];
+      // Fill the search input with the selected name (makes it clear what will be guessed)
+      document.getElementById('guessSearch').value = guessedPlayer.name;
       document.getElementById('guessSelectedFlag').innerHTML = flagHtml(guessedPlayer.flag);
       document.getElementById('guessSelectedName').textContent = guessedPlayer.name;
       document.getElementById('guessSelectedCountry').textContent = guessedPlayer.country;
